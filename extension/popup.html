@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordLens</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="wl-popup-container">
+        <h1 class="wl-popup-title">WordLens</h1>
+        <p class="wl-popup-subtitle">Your quiet reading companion</p>
+
+        <div class="wl-popup-section">
+            <label class="wl-popup-label" for="apiKeyInput">Groq API Key (free)</label>
+            <input type="password" id="apiKeyInput" class="wl-popup-input" placeholder="gsk_..." />
+            <button id="saveKeyBtn" class="wl-popup-btn">Save Key</button>
+            <p id="saveStatus" class="wl-popup-status"></p>
+        </div>
+
+        <hr class="wl-popup-divider" />
+
+        <button id="openPdf" class="wl-popup-link">📄 Open PDF Reader</button>
+        <button id="openSettings" class="wl-popup-link">⚙️ Settings</button>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>

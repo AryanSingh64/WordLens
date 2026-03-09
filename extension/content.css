@@ -1,0 +1,124 @@
+/* importing google fonts */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+#wordlens-popup-root {
+    /* 2. Scope CSS variables just to our popup to prevent leaking */
+    --wl-bg: #F7F5F0;
+    --wl-surface: #171717;
+    /* Defaulting the popup to dark mode for a cool contrast */
+    --wl-border: #333333;
+    --wl-text: #FAFAFA;
+    --wl-muted: #A3A3A3;
+    --wl-accent: #4ade80;
+    --wl-accent-light: #14532d;
+    --wl-font-sans: 'DM Sans', sans-serif;
+    --wl-font-serif: 'Inter', sans-serif;
+
+    /* insuring its top */
+    position: absolute;
+    z-index: 2147483647;
+    display: none;
+    pointer-events: auto;
+
+    /* Initial state for pop-up float animation */
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+
+    font-family: var(--wl-font-sans);
+    color: var(--wl-text);
+    line-height: 1.5;
+    text-align: left;
+}
+
+/* Active state for animation */
+#wordlens-popup-root.wl-show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.wl-card {
+    background-color: var(--wl-surface);
+    border: 1px solid var(--wl-border);
+    border-radius: 8px;
+    /* Strict 8px rule from your brief */
+    padding: 16px 20px;
+    width: 320px;
+    /* Nice soft drop shadow to lift it off the host page */
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    cursor: grab;
+}
+
+.wl-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 4px;
+}
+
+.wl-word {
+    font-family: var(--wl-font-serif);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--wl-text);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.wl-phonetic {
+    font-size: 13px;
+    color: var(--wl-muted);
+}
+
+.wl-definition {
+    font-size: 14.5px;
+    color: var(--wl-text);
+    line-height: 1.6;
+}
+
+.wl-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--wl-text);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-block;
+    background-color: var(--wl-accent-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* a simple animation while we wait for the api to get info */
+.wl-skeleton-pulse {
+    animation: wl-pulse 1.5s infinite;
+    background-color: #333;
+    border-radius: 4px;
+    height: 14px;
+    width: 100%;
+}
+
+@keyframes wl-pulse {
+    0% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.6;
+    }
+}
+
+
+.wl-example {
+    font-size: 13px;
+    color: var(--wl-muted);
+    margin-top: 4px;
+    line-height: 1.5;
+    font-style: italic;
+}

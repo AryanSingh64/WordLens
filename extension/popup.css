@@ -1,0 +1,100 @@
+body {
+  width: 280px;
+  padding: 16px;
+  font-family: 'DM Sans', sans-serif;
+  background-color: #171717;
+  color: #FAFAFA;
+  margin: 0;
+}
+
+.wl-popup-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wl-popup-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.wl-popup-subtitle {
+  font-size: 12px;
+  color: #A3A3A3;
+  margin: 0 0 8px 0;
+}
+
+.wl-popup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wl-popup-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #A3A3A3;
+}
+
+.wl-popup-input {
+  background-color: #0A0A0A;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #FAFAFA;
+  outline: none;
+  font-family: monospace;
+}
+
+.wl-popup-input:focus {
+  border-color: #4ade80;
+}
+
+.wl-popup-btn {
+  background-color: #14532d;
+  color: #4ade80;
+  border: none;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.wl-popup-btn:hover {
+  background-color: #166534;
+}
+
+.wl-popup-status {
+  font-size: 12px;
+  margin: 0;
+  min-height: 16px;
+}
+
+.wl-popup-divider {
+  border: none;
+  border-top: 1px solid #333;
+  margin: 4px 0;
+}
+
+.wl-popup-link {
+  background: none;
+  border: none;
+  color: #A3A3A3;
+  font-size: 13px;
+  padding: 8px 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+  transition: color 0.15s;
+}
+
+.wl-popup-link:hover {
+  color: #FAFAFA;
+}

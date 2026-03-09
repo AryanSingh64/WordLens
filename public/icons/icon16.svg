@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- WordLens icon: a simple book/lens shape in our accent green -->
+  <rect width="16" height="16" rx="3" fill="#2D5016"/>
+  <text x="8" y="12" text-anchor="middle" font-family="serif" font-size="11" font-weight="bold" fill="#F7F5F0">W</text>
+</svg>

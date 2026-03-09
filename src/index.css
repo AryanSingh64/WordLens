@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", sans-serif;
+  --font-serif: "Inter", sans-serif;
+
+  /* Tell Tailwind about our custom colors */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+}
+
+@layer base {
+  :root {
+    /* LIGHT MODE COLORS */
+    --bg: #F7F5F0;
+    /* Warm off-white */
+    --surface: #FFFFFF;
+    /* White card background */
+    --border: #DBCFBB;
+    /* Visible grey/beige border */
+    --text: #1A1714;
+    /* Near black text */
+    --muted: #8A8278;
+    /* Subtle text */
+    --accent: #2D5016;
+    /* Deep green */
+    --accent-light: #EAF0E4;
+    /* Light green hover bg */
+  }
+
+  .dark {
+    /* DARK MODE COLORS */
+    --bg: #0A0A0A;
+    /* Deep black background */
+    --surface: #171717;
+    /* Dark grey card background */
+    --border: #333333;
+    /* Grey border */
+    --text: #FAFAFA;
+    /* White text */
+    --muted: #A3A3A3;
+    /* Subtle text */
+    --accent: #4ade80;
+    /* Vibrant green */
+    --accent-light: #14532d;
+    /* Dark green hover */
+  }
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Make sure all headings use the sharp font */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+  }
+}
