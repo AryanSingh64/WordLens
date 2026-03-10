@@ -11,6 +11,10 @@ import ReactDOM from 'react-dom/client'
 import PdfViewer from './pages/pdf-viewer/PdfViewer.jsx'
 import './index.css'
 
+// Inject the WordLens core logic so it works natively on the PDF
+import '../extension/content.css'
+import '../extension/content.js'
+
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <PdfViewer />

@@ -42,13 +42,13 @@
     border: 1px solid var(--wl-border);
     border-radius: 8px;
     /* Strict 8px rule from your brief */
-    padding: 16px 20px;
-    width: 320px;
+    padding: 12px 16px;
+    width: 280px;
     /* Nice soft drop shadow to lift it off the host page */
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     cursor: grab;
 }
 
@@ -61,7 +61,7 @@
 
 .wl-word {
     font-family: var(--wl-font-serif);
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--wl-text);
     margin: 0;
@@ -69,18 +69,18 @@
 }
 
 .wl-phonetic {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--wl-muted);
 }
 
 .wl-definition {
-    font-size: 14.5px;
+    font-size: 13px;
     color: var(--wl-text);
-    line-height: 1.6;
+    line-height: 1.5;
 }
 
 .wl-tag {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--wl-text);
     text-transform: uppercase;
@@ -116,9 +116,9 @@
 
 
 .wl-example {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--wl-muted);
     margin-top: 4px;
-    line-height: 1.5;
+    line-height: 1.4;
     font-style: italic;
 }
