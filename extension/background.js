@@ -20,6 +20,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return true;
     }
 
+    if (message.type === 'TRANSLATE_TEXT') {
+        translateText(message.text)
+            .then(data => sendResponse({ success: true, data }))
+            .catch(err => sendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
+    if (message.type === 'OPEN_OPTIONS_PAGE') {
+        chrome.runtime.openOptionsPage();
+        return true;
+    }
 });
 
 
@@ -92,4 +103,24 @@ async function summarizeSentence(text, apiKey) {
     // Groq uses OpenAI format: choices[0].message.content
     const reply = json.choices?.[0]?.message?.content || 'No response received.';
     return { summary: reply };
+}
+
+// Google Translate API - free open endpoint
+async function translateText(text) {
+    // sl=auto (auto-detect source language), tl=en (translate to English)
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error('Translation network error');
+    }
+    const json = await response.json();
+
+    // The Google Translate response is a nested array. The first element contains chunks of translated text.
+    let translated = '';
+    if (json && json[0]) {
+        json[0].forEach(chunk => {
+            if (chunk[0]) translated += chunk[0];
+        });
+    }
+    return { translation: translated };
 }

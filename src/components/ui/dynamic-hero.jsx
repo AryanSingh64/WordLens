@@ -43,6 +43,8 @@ const HeroSection = ({
     tagline,
     buttonText,
     imageUrl,
+    logo,
+    headerRight,
     navItems = defaultNavItems,
 }) => {
     const canvasRef = useRef(null);
@@ -187,35 +189,46 @@ const HeroSection = ({
             style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
         >
             {/* ─── Navigation ─── */}
-            {/* ─── Navigation ─── */}
-            <nav className="w-full max-w-3xl mx-auto flex justify-between items-center px-6 py-8 text-sm select-none">
-                {navItems.map((item) => {
-                    const cls =
-                        'inline-block py-2 px-4 transition-colors duration-200 cursor-pointer text-muted hover:text-text';
+            <nav className="w-full max-w-5xl mx-auto flex justify-between items-center px-6 py-6 text-sm select-none z-20 relative">
+                {logo}
 
-                    if (item.href) {
-                        return (
-                            <a key={item.id} href={item.href} className={cls}>
-                                {item.label}
-                            </a>
-                        );
-                    }
-                    return (
-                        <button key={item.id} type="button" onClick={item.onClick} className={cls}>
-                            {item.label}
-                        </button>
-                    );
-                })}
+                <div className="flex items-center gap-6">
+                    <div className="hidden md:flex items-center gap-2">
+                        {navItems.map((item) => {
+                            const cls =
+                                'inline-block py-2 px-3 transition-colors duration-200 cursor-pointer text-muted hover:text-text';
+
+                            if (item.href) {
+                                return (
+                                    <a key={item.id} href={item.href} className={cls}>
+                                        {item.label}
+                                    </a>
+                                );
+                            }
+                            return (
+                                <button key={item.id} type="button" onClick={item.onClick} className={cls}>
+                                    {item.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {headerRight}
+                </div>
             </nav>
 
 
             {/* ─── Hero Content ─── */}
             <main className="flex-grow flex flex-col items-center justify-center">
                 <div className="mt-12 sm:mt-16 lg:mt-24 flex flex-col items-center">
-                    <h1
-                        className="text-3xl sm:text-4xl lg:text-5xl font-medium text-center px-4"
-                    >
-                        {heading}
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium tracking-tight text-center px-4 max-w-3xl leading-tight">
+                        {typeof heading === 'string' && heading.endsWith('.') ? (
+                            <>
+                                {heading.slice(0, -1)}
+                                <span className="text-[#ef4444]">.</span>
+                            </>
+                        ) : (
+                            heading
+                        )}
                     </h1>
                     <p
                         className="mt-3 text-center text-base sm:text-lg px-4 max-w-xl"

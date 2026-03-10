@@ -32,15 +32,15 @@
     "action": {
         "default_popup": "extension/popup.html",
         "default_icon": {
-            "16": "icons/icon16.svg",
-            "48": "icons/icon48.svg",
-            "128": "icons/icon128.svg"
+            "16": "icons/icon.png",
+            "48": "icons/icon.png",
+            "128": "icons/icon.png"
         }
     },
     "options_page": "options.html",
     "icons": {
-        "16": "icons/icon16.svg",
-        "48": "icons/icon48.svg",
-        "128": "icons/icon128.svg"
+        "16": "icons/icon.png",
+        "48": "icons/icon.png",
+        "128": "icons/icon.png"
     }
 }
