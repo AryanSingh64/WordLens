@@ -7,6 +7,9 @@ let isDragging = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
+// Map to hold speak-button text content (avoids broken data-attribute escaping)
+const speakTextMap = new Map();
+
 
 let currentTab = 'dictionary';
 let currentSelection = '';
@@ -173,7 +176,11 @@ function setupTabListners() {
   document.getElementById('wl-main-content').addEventListener('click', (e) => {
     const speakBtn = e.target.closest('.wl-speak-btn');
     if (speakBtn) {
-      const textToSpeak = speakBtn.dataset.text || currentSelection;
+      // Use the JS map to retrieve full text (avoids broken HTML attribute escaping)
+      const speakId = speakBtn.dataset.speakId;
+      const textToSpeak = (speakId && speakTextMap.get(speakId)) || currentSelection;
+      // Cancel any ongoing speech before starting new one
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
       utterance.lang = 'en-US';
       utterance.rate = 0.9;
@@ -306,11 +313,8 @@ function handleMouseUp(event) {
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
 
-      // Position the popup exactly at the bottom-left of the selection snippet
-      // accounting for scroll position
-      const x = rect.left + window.scrollX;
-
-      showPopup(x, rect, text, isWord);
+      // rect coords are already viewport coords — showPopup handles safe placement.
+      showPopup(rect.left, rect, text, isWord);
     } else if (text.length === 0) {
       // If the selection is empty (they clicked away), hide the card
       hidePopup();
@@ -329,12 +333,17 @@ function handleMouseDown(event) {
 }
 
 function showPopup(x, rect, text, isWord) {
-  // Safety check: ensure the popup doesn't bleed off the right edge of the screen
-  let safeX = x;
-  if (safeX + 340 > window.innerWidth + window.scrollX) {
-    safeX = (window.innerWidth + window.scrollX) - 340;
+  // Use fixed positioning (viewport coords) so dragging is simple and consistent.
+  // The popup card is 400px wide; keep a 12px margin from each edge.
+  const POPUP_WIDTH = 400;
+  const MARGIN = 12;
+
+  // x comes from rect.left (already viewport coords — no scrollX needed for fixed)
+  let safeX = rect.left;
+  if (safeX + POPUP_WIDTH > window.innerWidth - MARGIN) {
+    safeX = window.innerWidth - POPUP_WIDTH - MARGIN;
   }
-  if (safeX < 20) safeX = 20;
+  if (safeX < MARGIN) safeX = MARGIN;
 
   // Check if there's enough room below the selection (~250px for the card)
   const popupHeight = 250;
@@ -343,11 +352,11 @@ function showPopup(x, rect, text, isWord) {
 
   if (spaceBelow < popupHeight) {
     // Not enough room below — place it ABOVE the selection
-    safeY = rect.top + window.scrollY - popupHeight - 8;
-    if (safeY < window.scrollY) safeY = window.scrollY + 8; // don't go above viewport
+    safeY = rect.top - popupHeight - 8;
+    if (safeY < MARGIN) safeY = MARGIN;
   } else {
     // Plenty of room below — place it under the selection as usual
-    safeY = rect.bottom + window.scrollY + 8;
+    safeY = rect.bottom + 8;
   }
 
   popupEl.style.left = `${safeX}px`;
@@ -375,7 +384,7 @@ function setupDrag() {
 
     isDragging = true;
 
-    // Calculate the offset between mouse position and popup's top-left corner
+    // Since popup is position:fixed, getBoundingClientRect().left IS the CSS left value.
     const popupRect = popupEl.getBoundingClientRect();
     dragOffsetX = e.clientX - popupRect.left;
     dragOffsetY = e.clientY - popupRect.top;
@@ -390,9 +399,17 @@ function setupDrag() {
   document.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
 
-    // Move the popup to follow the mouse, adjusted by the initial offset
-    const newX = e.clientX + window.scrollX - dragOffsetX;
-    const newY = e.clientY + window.scrollY - dragOffsetY;
+    // With position:fixed, no scrollX/Y adjustment needed — clientX IS the viewport coord.
+    const POPUP_WIDTH = 400;
+    const POPUP_HEIGHT = popupEl.offsetHeight || 250;
+    const MARGIN = 12;
+
+    let newX = e.clientX - dragOffsetX;
+    let newY = e.clientY - dragOffsetY;
+
+    // Clamp so the popup never slides fully off-screen
+    newX = Math.max(MARGIN, Math.min(newX, window.innerWidth - POPUP_WIDTH - MARGIN));
+    newY = Math.max(MARGIN, Math.min(newY, window.innerHeight - POPUP_HEIGHT - MARGIN));
 
     popupEl.style.left = `${newX}px`;
     popupEl.style.top = `${newY}px`;
@@ -429,10 +446,13 @@ function renderDefinitionHtml(data) {
     </div>
   `).join('');
 
+  const speakId = 'speak-' + Date.now();
+  speakTextMap.set(speakId, data.word);
+
   return `
     <div class="wl-header" style="align-items: center; justify-content: flex-start; gap: 8px;">
       <h3 class="wl-word">${escapeHTML(data.word)}</h3>
-      <button class="wl-speak-btn" data-text="${escapeHTML(data.word)}" title="Pronounce">
+      <button class="wl-speak-btn" data-speak-id="${speakId}" title="Pronounce">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
       </button>
       <span class="wl-phonetic" style="margin-left: 4px;">${data.phonetic || ''}</span>
@@ -444,10 +464,14 @@ function renderDefinitionHtml(data) {
 }
 
 function renderSummaryHtml(title, text) {
+  // Store the full summary text in the JS map so the speaker reads the whole thing.
+  const speakId = 'speak-' + Date.now();
+  speakTextMap.set(speakId, text);
+
   return `
     <div class="wl-header" style="align-items: center; justify-content: flex-start; gap: 8px;">
       <h3 class="wl-word" style="font-size: 14px; font-weight: 500;">${escapeHTML(title.slice(0, 40))}${title.length > 40 ? '...' : ''}</h3>
-      <button class="wl-speak-btn" data-text="${escapeHTML(text)}" title="Listen to summary">
+      <button class="wl-speak-btn" data-speak-id="${speakId}" title="Listen to summary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
       </button>
     </div>

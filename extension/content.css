@@ -14,8 +14,8 @@
     --wl-font-sans: 'DM Sans', sans-serif;
     --wl-font-serif: 'Inter', sans-serif;
 
-    /* insuring its top */
-    position: absolute;
+    /* fixed = always in viewport coords; no scroll confusion for dragging */
+    position: fixed;
     z-index: 2147483647;
     display: none;
     pointer-events: auto;
