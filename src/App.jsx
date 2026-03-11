@@ -19,10 +19,10 @@ export const LogoSVG = ({ className = "w-7 h-7 md:w-8 md:h-8" }) => (
   </svg>
 )
 
-export const LogoBrand = ({ darkText = false }) => (
-  <div className="flex items-center gap-[6px] select-none text-text">
-    <LogoSVG />
-    <span className={`font-['Helvetica','Arial',sans-serif] font-bold text-2xl md:text-[28px] tracking-tighter leading-none ${darkText ? 'text-[#111]' : ''}`}>
+export const LogoBrand = ({ darkText = false, small = false }) => (
+  <div className="flex items-center gap-[6px] select-none">
+    <LogoSVG className={small ? 'w-5 h-5' : 'w-7 h-7 md:w-8 md:h-8'} />
+    <span className={`font-['Helvetica','Arial',sans-serif] font-bold tracking-tighter leading-none ${small ? 'text-xl' : 'text-2xl md:text-[28px]'} ${darkText ? 'text-[#111]' : 'text-text'}`}>
       wordlens<sup className="text-[10px] md:text-xs font-normal ml-0.5 tracking-normal opacity-70">®</sup>
     </span>
   </div>
@@ -69,6 +69,37 @@ function App() {
     }
   }, [isDark]);
 
+  // Inject read-box keyframes once
+  useEffect(() => {
+    const id = 'wl-read-box-style';
+    if (!document.getElementById(id)) {
+      const s = document.createElement('style');
+      s.id = id;
+      s.textContent = `
+        @keyframes read-box {
+          0%   { clip-path: inset(0 100% 0 0); }
+          40%  { clip-path: inset(0 0 0 0); }
+          80%  { clip-path: inset(0 0 0 0); }
+          100% { clip-path: inset(0 100% 0 0); }
+        }
+        .wl-read-box {
+          position: relative;
+          display: inline-block;
+        }
+        .wl-read-box::after {
+          content: '';
+          position: absolute;
+          inset: -2px -6px;
+          border: 2.5px solid #9B5DE5;
+          border-radius: 4px;
+          animation: read-box 3.5s ease-in-out infinite;
+          pointer-events: none;
+        }
+      `;
+      document.head.appendChild(s);
+    }
+  }, []);
+
   const testimonials = [
     { name: "Robert", review: "I couldn't believe how fast and magically this extension worked. I couldn't be happier.", comment: "Seriously an incredibly simple tool for reading long PDFs." },
     { name: "Timothy", review: "Extremely happy with how quick and simple the translation process went. I can't thank you enough. Very impressive." },
@@ -83,11 +114,11 @@ function App() {
 
       {/* Hero Section */}
       <HeroSection
-        heading="Read with understanding."
+        heading={<><span className="wl-read-box">Read</span>{' with understanding.'}</>}
         tagline="WordLens sits beside your reading. Look up a word, understand a sentence, open a PDF — all without leaving the page."
         buttonText="Add to Chrome"
         imageUrl="https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=60"
-        logo={<LogoBrand />}
+        logo={<LogoBrand small={true} />}
         headerRight={
           <button
             onClick={() => setIsDark(!isDark)}
@@ -149,35 +180,19 @@ function App() {
             {/* Logo area */}
             <LogoBrand darkText={true} />
 
-            {/* Links Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-12 gap-y-10 text-sm">
+            {/* Links Grid — keep only real links */}
+            <div className="grid grid-cols-2 gap-x-16 gap-y-10 text-sm">
               <div className="flex flex-col gap-4">
                 <span className="text-[#888] font-medium mb-1">Product</span>
-                <a href="#" className="hover:opacity-60 transition-opacity">How it works</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Features</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Pricing</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">FAQ</a>
-              </div>
-              <div className="flex flex-col gap-4">
-                <span className="text-[#888] font-medium mb-1">Company</span>
-                <a href="#" className="hover:opacity-60 transition-opacity">About</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Careers</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Brand</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Contact</a>
-              </div>
-              <div className="flex flex-col gap-4">
-                <span className="text-[#888] font-medium mb-1">Resources</span>
-                <a href="#" className="hover:opacity-60 transition-opacity">Download</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Terms of Use</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Privacy Policy</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Support</a>
+                <a href="#how-it-works" className="hover:opacity-60 transition-opacity">How it works</a>
+                <a href="#how-it-works" className="hover:opacity-60 transition-opacity">Features</a>
+                <a href="pdf-viewer.html" className="hover:opacity-60 transition-opacity">PDF Reader</a>
               </div>
               <div className="flex flex-col gap-4">
                 <span className="text-[#888] font-medium mb-1">Connect</span>
-                <a href="#" className="hover:opacity-60 transition-opacity">X (Twitter)</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Instagram</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">LinkedIn</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">YouTube</a>
+                <a href="https://twitter.com" target="_blank" rel="noopener" className="hover:opacity-60 transition-opacity">X (Twitter)</a>
+                <a href="https://github.com" target="_blank" rel="noopener" className="hover:opacity-60 transition-opacity">GitHub</a>
+                <a href="#" className="hover:opacity-60 transition-opacity">Support</a>
               </div>
             </div>
           </div>
