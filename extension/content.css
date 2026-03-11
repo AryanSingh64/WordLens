@@ -43,6 +43,8 @@
     border-radius: 8px;
     padding: 0px;
     width: 400px;
+    overflow: hidden;
+    /* clips child scrollbars and rounded corner bleed */
     /* Nice soft drop shadow to lift it off the host page */
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
     display: flex;
@@ -153,10 +155,25 @@
 .wl-content-area {
     flex: 1;
     /* Takes up all remaining space */
-    padding: 12px 16px;
+    padding: 14px 18px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    overflow: hidden;
+    /* clip children, prevents bleed onto card edges */
+}
+
+/* Hide native scrollbars on any scrollable child inside the content area,
+   while keeping scroll functionality intact */
+.wl-content-area *::-webkit-scrollbar {
+    display: none;
+}
+
+.wl-content-area * {
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE / Edge legacy */
 }
 
 /* 4. The Sidebar Buttons */

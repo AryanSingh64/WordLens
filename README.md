@@ -9,13 +9,13 @@
 <br />
 
 <a href="https://github.com/AryanSingh64/WordLens">
-  <img src="https://readme-typing-svg.demolab.com?font=Helvetica&weight=700&size=36&duration=3000&pause=800&color=171717&center=true&vCenter=true&width=400&lines=wordlens" alt="WordLens" />
+  <img src="https://readme-typing-svg.demolab.com?font=Helvetica&weight=700&size=36&duration=3000&pause=800&color=E8E4DE&background=00000000&center=true&vCenter=true&width=400&lines=wordlens" alt="WordLens" />
 </a>
 
 <br />
 
-<p align="center" style="max-width: 520px">
-  A quiet reading companion. Select any text on the web — get the definition, a plain-English summary, or a translation. No context switching. No new tab.
+<p align="center">
+  <sub>A quiet reading companion. Select any text on the web — get the definition, a plain-English summary, or a translation. No context switching. No new tab.</sub>
 </p>
 
 <br />
