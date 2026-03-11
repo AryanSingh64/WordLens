@@ -184,24 +184,24 @@ The popup is freely draggable. Grab it anywhere and move it out of the way witho
 <table>
 <tr>
 <td align="center">
-  <img src="docs/images/screenshot-dictionary.png" width="340" alt="Dictionary view" />
+  <img src="https://github.com/AryanSingh64/WordLens/blob/main/public/dict%20(2).png" width="340" alt="Dictionary view" />
   <br />
   <sub>Dictionary tab</sub>
 </td>
 <td align="center">
-  <img src="docs/images/screenshot-ai.png" width="340" alt="AI summary view" />
+  <img src="https://github.com/AryanSingh64/WordLens/blob/main/public/summary.png" width="340" alt="AI summary view" />
   <br />
   <sub>AI summary tab</sub>
 </td>
 </tr>
 <tr>
 <td align="center">
-  <img src="docs/images/screenshot-translate.png" width="340" alt="Translate view" />
+  <img src="https://github.com/AryanSingh64/WordLens/blob/main/public/translate.png" width="340" alt="Translate view" />
   <br />
   <sub>Translation tab</sub>
 </td>
 <td align="center">
-  <img src="docs/images/screenshot-dashboard.png" width="340" alt="Saved words dashboard" />
+  <img src="https://github.com/AryanSingh64/WordLens/blob/main/public/dict.png" width="340" alt="Saved words dashboard" />
   <br />
   <sub>Saved words dashboard</sub>
 </td>
