@@ -481,34 +481,35 @@
 /* Language selector buttons (grid) */
 .wl-lang-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 8px;
-    margin-top: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 6px;
+    margin-top: 10px;
 }
 
 .wl-lang-btn {
     background: rgba(0, 0, 0, 0.05);
     border: 1px solid var(--wl-glass-border-light);
-    border-radius: 999px;
-    padding: 8px 12px;
-    font-size: 12px;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
     font-family: var(--wl-font-sans);
-    color: var(--wl-text-light);
+    color: #333; /* Always dark for readability on pastel */
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     text-align: center;
+    line-height: 1.3;
 }
 
 #wordlens-sidepanel-root .wl-lang-btn,
 #wordlens-popup-root.wl-theme-dark .wl-lang-btn {
     background: rgba(255, 255, 255, 0.05);
     border-color: var(--wl-glass-border-dark);
-    color: var(--wl-text-dark);
+    color: #333; /* Keep dark on pastel even in dark theme */
 }
 
 .wl-lang-btn:hover {
-    border-color: var(--wl-accent);
-    color: var(--wl-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .wl-lang-btn.active {
@@ -516,6 +517,7 @@
     border-color: var(--wl-accent);
     color: #000;
     font-weight: 600;
+    box-shadow: 0 2px 8px rgba(74, 222, 128, 0.3);
 }
 
 #wordlens-sidepanel-root .wl-lang-name,

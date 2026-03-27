@@ -42,6 +42,22 @@
         { code: 'hi', name: 'Hindi' },
     ];
 
+    // Pastel color palette for language buttons
+    const PASTEL_COLORS = [
+        '#FFD3E1', // pink
+        '#C8E6C9', // green
+        '#BBDEFB', // light blue
+        '#FFECB3', // yellow
+        '#E1BEE7', // purple
+        '#B2DFDB', // teal
+        '#FFCCBC', // orange
+        '#D1C4E9', // violet
+        '#C5CAE9', // periwinkle
+        '#CFD8DC', // gray-blue
+        '#FFE0B2', // deep orange
+        '#F8BBD0', // pink accent
+    ];
+
     // Cache for speak button text
     const speakTextMap = new Map();
 
@@ -531,12 +547,15 @@
                 <div style="margin-top: 12px;">
                     <div class="wl-lang-label">Target Language:</div>
                     <div class="wl-lang-buttons">
-                        ${LANGUAGES.filter(l => l.code !== 'en').map(lang => `
-                            <button class="wl-lang-btn ${lang.code === targetLang ? 'active' : ''}"
-                                    data-lang="${lang.code}">
-                                ${escapeHTML(lang.name)}
-                            </button>
-                        `).join('')}
+                        ${LANGUAGES.filter(l => l.code !== 'en').map((lang, idx) => {
+                            const isActive = lang.code === targetLang;
+                            const color = PASTEL_COLORS[idx % PASTEL_COLORS.length];
+                            return `<button class="wl-lang-btn ${isActive ? 'active' : ''}"
+                                    data-lang="${lang.code}"
+                                    ${!isActive ? `style="background-color: ${color};"` : ''}>
+                                    ${escapeHTML(lang.name)}
+                                </button>`;
+                        }).join('')}
                     </div>
                 </div>
             `;
@@ -566,8 +585,19 @@
                 return;
             }
 
-            // Sort by newest first (highest timestamp)
-            words.sort((a, b) => b.timestamp - a.timestamp);
+            // Normalize: use 'date' as fallback for 'timestamp'
+            words.forEach(w => {
+                if (!w.timestamp && w.date) {
+                    w.timestamp = w.date;
+                }
+            });
+
+            // Sort by newest first (highest timestamp), handle missing timestamps
+            words.sort((a, b) => {
+                const tsA = a.timestamp || 0;
+                const tsB = b.timestamp || 0;
+                return tsB - tsA;
+            });
 
             main.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -591,6 +621,14 @@
         }
     }
 
+    function formatVaultDate(entry) {
+        const ts = entry.timestamp || entry.date;
+        if (!ts) return '';
+        const date = new Date(ts);
+        if (isNaN(date.getTime())) return '';
+        return date.toLocaleDateString();
+    }
+
     function renderVaultList(words) {
         const list = document.getElementById('wl-vault-list');
         if (!list) return;
@@ -599,7 +637,7 @@
             <div class="wl-vault-item" data-index="${index}">
                 <h4 class="wl-vault-word">${escapeHTML(entry.word)}</h4>
                 <p class="wl-vault-context">${escapeHTML(entry.contextSentence || entry.meaning || '')}</p>
-                <p class="wl-vault-date">${new Date(entry.timestamp).toLocaleDateString()}</p>
+                <p class="wl-vault-date">${formatVaultDate(entry)}</p>
                 <div class="wl-vault-actions">
                     <button class="wl-vault-btn wl-vault-lookup"
                         data-word="${encodeURIComponent(entry.word)}"
@@ -636,9 +674,25 @@
     function renderError(msg) {
         const main = document.getElementById('wl-main-content');
         if (!main) return;
+
+        // Check if it's a 404/not found error
+        const isNotFound = msg.toLowerCase().includes('404') || msg.toLowerCase().includes('not found');
+        const title = isNotFound ? 'Word not found' : 'Error';
+        const suggestion = isNotFound
+            ? 'This word is not in our dictionary. Try a different word or check spelling.'
+            : 'Something went wrong. Please try again.';
+
         main.innerHTML = `
-            <div class="wl-error">${escapeHTML(msg)}</div>
-            <button class="wl-action-btn wl-retry-btn" style="margin-top: 12px; width: auto;">Retry</button>
+            <div style="text-align: center; padding: 30px 20px; color: var(--wl-muted-light);">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.6;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <h4 style="margin: 0 0 8px; font-size: 16px; color: var(--wl-text-light);">${escapeHTML(title)}</h4>
+                <p style="margin: 0; font-size: 13px; line-height: 1.5;">${escapeHTML(suggestion)}</p>
+                <button class="wl-action-btn wl-retry-btn" style="margin-top: 16px; width: auto;">Try again</button>
+            </div>
         `;
     }
 
