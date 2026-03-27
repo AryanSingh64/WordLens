@@ -62,8 +62,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     };
 
-    // We check the "type" field to know what kind of request this is
-    if (message.type === 'LOOKUP_WORD') {
+// Handle keyboard command to show command palette
+if (chrome.commands && chrome.commands.onCommand) {
+    chrome.commands.onCommand.addListener((command) => {
+        if (command === 'open-palette') {
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                if (tabs[0]?.id) {
+                    chrome.tabs.sendMessage(tabs[0].id, { type: 'SHOW_COMMAND_PALETTE' });
+                }
+            });
+        }
+    });
+}
+
+// We check the "type" field to know what kind of request this is
+if (message.type === 'LOOKUP_WORD') {
         // Call the free dictionary API
         lookupWord(message.word)
             .then(data => safeSendResponse({ success: true, data }))
@@ -79,14 +92,92 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.type === 'TRANSLATE_TEXT') {
-        translateText(message.text)
+        translateText(message.text, message.targetLang || 'en')
             .then(data => safeSendResponse({ success: true, data }))
+            .catch(err => safeSendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
+    if (message.type === 'CONTEXT_DEFINITION') {
+        getContextDefinition(message.word, message.sentence, message.apiKey)
+            .then(data => safeSendResponse({ success: true, data }))
+            .catch(err => safeSendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
+    if (message.type === 'GET_ETYMOLOGY') {
+        getEtymology(message.word, message.apiKey)
+            .then(data => safeSendResponse({ success: true, data }))
+            .catch(err => safeSendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
+    if (message.type === 'GET_CEFR_LEVEL') {
+        getCEFRLevel(message.word, message.apiKey)
+            .then(data => safeSendResponse({ success: true, data }))
+            .catch(err => safeSendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
+    if (message.type === 'SAVE_TO_VAULT') {
+        saveToVault(message.entry)
+            .then(() => safeSendResponse({ success: true }))
+            .catch(err => safeSendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
+    if (message.type === 'GET_VAULT') {
+        getVault()
+            .then(data => safeSendResponse({ success: true, data }))
+            .catch(err => safeSendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
+    if (message.type === 'CLEAR_VAULT') {
+        clearVault()
+            .then(() => safeSendResponse({ success: true }))
             .catch(err => safeSendResponse({ success: false, error: err.message }));
         return true;
     }
 
     if (message.type === 'OPEN_OPTIONS_PAGE') {
         chrome.runtime.openOptionsPage();
+        return true;
+    }
+
+    if (message.type === 'OPEN_SIDE_PANEL') {
+        const wordData = {
+            word: message.word,
+            context: message.context || '',
+            timestamp: Date.now()
+        };
+        // Store so side panel can pick up on open
+        chrome.storage.local.set({ pendingWord: wordData }, () => {
+            // Try to open the side panel in the sender's window
+            if (sender.tab?.windowId && chrome.sidePanel) {
+                chrome.sidePanel.open({ windowId: sender.tab.windowId });
+            }
+        });
+        // Also send direct message in case side panel is already open
+        chrome.runtime.sendMessage({ type: 'UPDATE_WORD', ...wordData }).catch(() => {});
+        return true;
+    }
+
+    if (message.type === 'SET_CURRENT_WORD') {
+        // Direct message to side panel if already open: forward to side panel via storage
+        chrome.storage.local.set({ currentWordData: {
+            word: message.word,
+            context: message.context || '',
+            timestamp: Date.now()
+        } });
+        // Also send a message directly to side panel if it's open
+        if (chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({
+                type: 'UPDATE_WORD',
+                word: message.word,
+                context: message.context || ''
+            }).catch(() => {});
+        }
         return true;
     }
 });
@@ -217,4 +308,213 @@ async function translateText(text, targetLang = 'en') {
     // Cache successful translations (key includes target language)
     setCache('tr', cacheKey, result);
     return result;
+}
+
+// Contextual definition using Groq
+async function getContextDefinition(word, sentence, apiKey) {
+    if (!apiKey) {
+        throw new Error('No API key. Click the WordLens icon and add your free Groq API key.');
+    }
+
+    const cacheKey = `ctx:${word}:${sentence}`;
+    const cached = getCached('ctx', cacheKey);
+    if (cached) return cached;
+
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            max_tokens: 200,
+            temperature: 0.3,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a precise reading companion. Explain word meanings in context. Be concise and accurate.'
+                },
+                {
+                    role: 'user',
+                    content: `The user selected the word '${word}' in this sentence: '${sentence}'. In 1-2 sentences, explain what '${word}' means specifically in this context. Do not give a generic dictionary definition.`
+                }
+            ]
+        }),
+    };
+
+    const response = await fetchWithRetry('https://api.groq.com/openai/v1/chat/completions', options);
+
+    if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error(`Groq error (${response.status}): ${errBody}`);
+    }
+    const json = await response.json();
+    const reply = json.choices?.[0]?.message?.content || 'No definition available.';
+    const result = { definition: reply.trim() };
+
+    setCache('ctx', cacheKey, result);
+    return result;
+}
+
+// One-line etymology using Groq
+async function getEtymology(word, apiKey) {
+    if (!apiKey) {
+        throw new Error('No API key.');
+    }
+
+    const cacheKey = `ety:${word}`;
+    const cached = getCached('ety', cacheKey);
+    if (cached) return cached;
+
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            max_tokens: 100,
+            temperature: 0.4,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'Give extremely concise etymologies. Always start with "From [language]..." and keep it to exactly one sentence.'
+                },
+                {
+                    role: 'user',
+                    content: `Give the etymology of the word '${word}' in exactly one sentence. Start with 'From [language]...'. Be concise.`
+                }
+            ]
+        }),
+    };
+
+    const response = await fetchWithRetry('https://api.groq.com/openai/v1/chat/completions', options);
+
+    if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error(`Groq error (${response.status}): ${errBody}`);
+    }
+    const json = await response.json();
+    const reply = json.choices?.[0]?.message?.content || 'Etymology not available.';
+    const result = { etymology: reply.trim() };
+
+    setCache('ety', cacheKey, result);
+    return result;
+}
+
+// CEFR level using Groq
+async function getCEFRLevel(word, apiKey) {
+    if (!apiKey) {
+        throw new Error('No API key.');
+    }
+
+    const cacheKey = `cefr:${word}`;
+    const cached = getCached('cefr', cacheKey);
+    if (cached) return cached;
+
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            max_tokens: 10,
+            temperature: 0.1,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a language proficiency classifier. Respond with ONLY one of these tokens: A1, A2, B1, B2, C1, C2. No other text.'
+                },
+                {
+                    role: 'user',
+                    content: `What is the CEFR level of the word '${word}'? Reply with only one of: A1, A2, B1, B2, C1, C2.`
+                }
+            ]
+        }),
+    };
+
+    const response = await fetchWithRetry('https://api.groq.com/openai/v1/chat/completions', options);
+
+    if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error(`Groq error (${response.status}): ${errBody}`);
+    }
+    const json = await response.json();
+    const reply = json.choices?.[0]?.message?.content?.trim() || 'B1';
+    // Validate it's one of the expected values
+    const validLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    const level = validLevels.includes(reply) ? reply : 'B1';
+    const result = { level };
+
+    setCache('cefr', cacheKey, result);
+    return result;
+}
+
+// Vocabulary vault operations
+async function saveToVault(entry) {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get(['savedWords'], (result) => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+                return;
+            }
+            const words = result.savedWords || [];
+
+            // Avoid duplicates based on exact word + context
+            const existsIndex = words.findIndex(w =>
+                w.word.toLowerCase() === entry.word.toLowerCase() &&
+                w.contextSentence === entry.contextSentence
+            );
+
+            if (existsIndex === -1) {
+                words.unshift(entry); // Add to beginning for most recent first
+                chrome.storage.local.set({ savedWords: words }, () => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError);
+                        return;
+                    }
+                    resolve();
+                });
+            } else {
+                // Already saved, move to top to mark as recent
+                const existing = words.splice(existsIndex, 1)[0];
+                words.unshift(existing);
+                chrome.storage.local.set({ savedWords: words }, () => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError);
+                        return;
+                    }
+                    resolve();
+                });
+            }
+        });
+    });
+}
+
+async function getVault() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get(['savedWords'], (result) => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+                return;
+            }
+            resolve(result.savedWords || []);
+        });
+    });
+}
+
+async function clearVault() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.set({ savedWords: [] }, () => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+                return;
+            }
+            resolve();
+        });
+    });
 }

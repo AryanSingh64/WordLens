@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordLens</title>
+    <link rel="stylesheet" href="content.css">
+    <style>
+        /* Side panel specific overrides */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        /* Initial hidden state */
+        #wordlens-sidepanel-root {
+            display: none;
+        }
+
+        #wordlens-sidepanel-root.wl-visible {
+            display: block;
+        }
+
+        /* Language settings modal */
+        #wl-lang-settings {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+            width: 90%;
+            max-width: 400px;
+            background: var(--wl-surface-light);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--wl-glass-border-light);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: none;
+        }
+
+        #wl-lang-settings.wl-visible {
+            display: block;
+            animation: wl-card-entrance 200ms ease-out;
+        }
+
+        #wl-lang-settings.wl-theme-dark {
+            background: var(--wl-surface-dark);
+            border-color: var(--wl-glass-border-dark);
+        }
+
+        .wl-settings-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--wl-text-light);
+        }
+
+        #wl-lang-settings.wl-theme-dark .wl-settings-title {
+            color: var(--wl-text-dark);
+        }
+
+        .wl-settings-desc {
+            font-size: 13px;
+            color: var(--wl-muted-light);
+            margin-bottom: 12px;
+        }
+
+        #wl-lang-settings.wl-theme-dark .wl-settings-label,
+        #wl-lang-settings.wl-theme-dark .wl-settings-desc {
+            color: var(--wl-muted-dark);
+        }
+
+        .wl-lang-grid-settings {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .wl-lang-checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #wl-lang-settings.wl-theme-dark .wl-lang-checkbox-wrapper {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .wl-lang-checkbox-wrapper:hover {
+            background: rgba(74, 222, 128, 0.08);
+        }
+
+        .wl-lang-checkbox {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--wl-accent);
+        }
+
+        .wl-lang-label {
+            font-size: 13px;
+            color: var(--wl-text-light);
+        }
+
+        #wl-lang-settings.wl-theme-dark .wl-lang-label {
+            color: var(--wl-text-dark);
+        }
+
+        .wl-settings-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .wl-settings-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .wl-settings-btn-cancel {
+            background: transparent;
+            color: var(--wl-muted-light);
+            border: 1px solid var(--wl-glass-border-light);
+        }
+
+        #wl-lang-settings.wl-theme-dark .wl-settings-btn-cancel {
+            color: var(--wl-muted-dark);
+            border-color: var(--wl-glass-border-dark);
+        }
+
+        .wl-settings-btn-cancel:hover {
+            background: rgba(128, 128, 128, 0.1);
+        }
+
+        .wl-settings-btn-save {
+            background: var(--wl-accent);
+            color: #000;
+        }
+
+        .wl-settings-btn-save:hover {
+            background: #22c55e;
+        }
+
+        /* Backdrop for settings modal */
+        #wl-settings-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            display: none;
+        }
+
+        #wl-settings-backdrop.wl-visible {
+            display: block;
+        }
+
+        /* No results state */
+        .wl-cp-no-results {
+            padding: 20px;
+            text-align: center;
+            color: var(--wl-muted-light);
+            font-size: 14px;
+        }
+
+        #wordlens-command-palette.wl-theme-dark .wl-cp-no-results {
+            color: var(--wl-muted-dark);
+        }
+    </style>
+</head>
+<body>
+    <!-- Side panel root (hidden by default) -->
+    <div id="wordlens-sidepanel-root">
+        <div class="wl-card">
+            <div class="wl-sidebar">
+                <button class="wl-tab-btn active" id="wl-tab-dict" title="Dictionary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <span>Dictionary</span>
+                </button>
+                <button class="wl-tab-btn" id="wl-tab-ai" title="AI Summary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                        <circle cx="12" cy="5" r="2"></circle>
+                        <path d="M12 7v4"></path>
+                        <line x1="8" y1="16" x2="8.01" y2="16"></line>
+                        <line x1="16" y1="16" x2="16.01" y2="16"></line>
+                    </svg>
+                    <span>Summary</span>
+                </button>
+                <button class="wl-tab-btn" id="wl-tab-trans" title="Translate">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                    <span>Translate</span>
+                </button>
+
+                <div class="wl-spacer"></div>
+
+                <button class="wl-action-btn" id="wl-btn-save" title="Save Word">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    <span>Save</span>
+                </button>
+                <button class="wl-action-btn" id="wl-btn-vault" title="Vocabulary Vault">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>Vault</span>
+                </button>
+                <button class="wl-action-btn" id="wl-btn-lang-settings" title="Languages">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"></path>
+                    </svg>
+                    <span>Languages</span>
+                </button>
+            </div>
+
+            <div class="wl-content-area" id="wl-main-content">
+                <!-- Content injected dynamically -->
+            </div>
+        </div>
+
+        <div class="wl-brand">
+            <svg viewBox="0 0 100 100" width="12" height="12">
+                <rect x="0" y="0" width="20" height="20" fill="#00F5D4" />
+                <rect x="0" y="20" width="20" height="20" fill="#00F5D4" />
+                <rect x="0" y="40" width="20" height="20" fill="#00F5D4" />
+                <rect x="0" y="60" width="20" height="20" fill="#00F5D4" />
+                <rect x="20" y="80" width="20" height="20" fill="#00BBF9" />
+                <rect x="40" y="40" width="20" height="20" fill="#9B5DE5" />
+                <rect x="40" y="60" width="20" height="20" fill="#9B5DE5" />
+                <rect x="60" y="80" width="20" height="20" fill="#F15BB5" />
+                <rect x="80" y="0" width="20" height="20" fill="#FF006E" />
+                <rect x="80" y="20" width="20" height="20" fill="#FF006E" />
+                <rect x="80" y="40" width="20" height="20" fill="#FF006E" />
+                <rect x="80" y="60" width="20" height="20" fill="#FF006E" />
+            </svg>
+            <span>wordlens®</span>
+        </div>
+    </div>
+
+    <!-- Settings modal -->
+    <div id="wl-settings-backdrop"></div>
+    <div id="wl-lang-settings">
+        <h2 class="wl-settings-title">Translation Languages</h2>
+        <p class="wl-settings-desc">Select 3 languages to show in the translation panel:</p>
+        <div class="wl-lang-grid-settings" id="wl-lang-checkboxes">
+            <!-- Checkboxes injected by JS -->
+        </div>
+        <div class="wl-settings-actions">
+            <button class="wl-settings-btn wl-settings-btn-cancel" id="wl-settings-cancel">Cancel</button>
+            <button class="wl-settings-btn wl-settings-btn-save" id="wl-settings-save">Save</button>
+        </div>
+    </div>
+
+    <!-- Command palette -->
+    <div id="wordlens-command-palette">
+        <div class="wl-cp-input-wrapper">
+            <svg class="wl-cp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="M21 21l-4.35-4.35"></path>
+            </svg>
+            <input type="text" class="wl-cp-input" id="wl-cp-input" placeholder="Search any word..." autocomplete="off">
+            <button class="wl-cp-close" id="wl-cp-close" title="Close (Escape)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="wl-cp-results" id="wl-cp-results">
+            <!-- Results injected by JS -->
+        </div>
+    </div>
+
+    <script src="sidepanel.js"></script>
+</body>
+</html>

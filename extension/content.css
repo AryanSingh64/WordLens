@@ -1,260 +1,941 @@
-/* importing google fonts */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+/* Import Google Fonts: Instrument Serif (title) and Geist Mono (pronunciation) */
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital,wght@0,400;0,500;1,400&display=swap');
 
-#wordlens-popup-root {
-    /* 2. Scope CSS variables just to our popup to prevent leaking */
-    --wl-bg: #F7F5F0;
-    --wl-surface: #171717;
-    /* Defaulting the popup to dark mode for a cool contrast */
-    --wl-border: #333333;
-    --wl-text: #FAFAFA;
-    --wl-muted: #A3A3A3;
+#wordlens-popup-root,
+#wordlens-sidepanel-root {
+    /* === Color System (CSS Custom Properties) === */
+    /* Light theme (default) */
+    --wl-glass-bg-light: rgba(245, 235, 220, 0.15);
+    --wl-glass-border-light: rgba(245, 235, 220, 0.25);
+    --wl-text-light: #1a1a1a;
+    --wl-muted-light: #6b6b6b;
+    --wl-surface-light: rgba(255, 252, 247, 0.85);
+
+    /* Dark theme */
+    --wl-glass-bg-dark: rgba(30, 30, 30, 0.25);
+    --wl-glass-border-dark: rgba(255, 255, 255, 0.1);
+    --wl-text-dark: #f0f0f0;
+    --wl-muted-dark: #a0a0a0;
+    --wl-surface-dark: rgba(20, 20, 20, 0.85);
+
+    /* POS border colors */
+    --wl-pos-noun: #C4704F;
+    --wl-pos-verb: #7A9E7E;
+    --wl-pos-adjective: #C9A84C;
+    --wl-pos-adverb: #9B8EA8;
+
+    /* Accents */
     --wl-accent: #4ade80;
     --wl-accent-light: #14532d;
-    --wl-font-sans: 'DM Sans', sans-serif;
-    --wl-font-serif: 'Inter', sans-serif;
 
-    /* fixed = always in viewport coords; no scroll confusion for dragging */
+    /* Fonts */
+    --wl-font-serif: 'Instrument Serif', serif;
+    --wl-font-mono: 'Geist Mono', monospace;
+    --wl-font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* === End Color System === */
+
+    /* positioning */
     position: fixed;
     z-index: 2147483647;
     display: none;
     pointer-events: auto;
 
-    /* Initial state for pop-up float animation */
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-
     font-family: var(--wl-font-sans);
-    color: var(--wl-text);
-    line-height: 1.5;
+    color: var(--wl-text-light);
+    line-height: 1.6;
     text-align: left;
+
+    /* Will switch colors based on theme class */
 }
 
-/* Active state for animation */
-#wordlens-popup-root.wl-show {
-    opacity: 1;
-    transform: translateY(0);
+#wordlens-sidepanel-root {
+    /* Side panel takes full height */
+    height: 100vh;
+    width: 100%;
+    position: static;
+    display: block;
 }
 
-.wl-card {
-    background-color: var(--wl-surface);
-    border: 1px solid var(--wl-border);
-    border-radius: 8px;
-    padding: 0px;
+/* Theme variants */
+#wordlens-popup-root.wl-theme-dark,
+#wordlens-sidepanel-root.wl-theme-dark {
+    color: var(--wl-text-dark);
+}
+
+/* Glass morphism container */
+#wordlens-popup-root .wl-card,
+#wordlens-sidepanel-root .wl-card {
+    background: var(--wl-surface-light);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--wl-glass-border-light);
+    border-radius: 12px;
+    padding: 0;
     width: 100%;
     max-width: 600px;
     overflow: hidden;
-    /* clips child scrollbars and rounded corner bleed */
-    /* Nice soft drop shadow to lift it off the host page */
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.12),
+        0 2px 8px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     cursor: grab;
-    /* Allow card to grow with content up to max-width */
-    min-width: 300px;
-    /* Height: grow with content but never exceed viewport */
+    min-width: 320px;
     max-height: calc(100vh - 48px);
 }
 
+#wordlens-sidepanel-root .wl-card {
+    max-width: none;
+    height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+}
+
+/* Dark theme glass */
+#wordlens-popup-root.wl-theme-dark .wl-card,
+#wordlens-sidepanel-root.wl-theme-dark .wl-card {
+    background: var(--wl-surface-dark);
+    border-color: var(--wl-glass-border-dark);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 2px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Card entrance animation: rise from 12px with opacity fade */
+@keyframes wl-card-entrance {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#wordlens-popup-root .wl-card,
+#wordlens-sidepanel-root .wl-card {
+    animation: wl-card-entrance 200ms ease-out;
+}
+
+/* Underline pulse animation for pause-to-peek */
+@keyframes wl-underline-pulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scaleX(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+}
+
+.wl-peek-underline {
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--wl-accent);
+    border-radius: 1px;
+    animation: wl-underline-pulse 1.2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Pause-to-peek hint (subtle glow) */
+.wl-peek-hint {
+    background: linear-gradient(to bottom, transparent, rgba(74, 222, 128, 0.08));
+    border-radius: 2px;
+    position: relative;
+}
+
+/* Side panel layout */
+.wl-sidebar {
+    width: 120px;
+    background: rgba(0, 0, 0, 0.03);
+    border-right: 1px solid var(--wl-glass-border-light);
+    border-radius: 12px 0 0 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 12px;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+#wordlens-sidepanel-root .wl-sidebar,
+#wordlens-popup-root.wl-theme-dark .wl-sidebar {
+    background: rgba(0, 0, 0, 0.1);
+    border-color: var(--wl-glass-border-dark);
+}
+
+/* Main content area */
+.wl-content-area {
+    flex: 1;
+    min-height: 200px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+}
+
+/* Hide scrollbars */
+.wl-content-area *::-webkit-scrollbar {
+    width: 6px;
+}
+.wl-content-area *::-webkit-scrollbar-track {
+    background: transparent;
+}
+.wl-content-area *::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 3px;
+}
+.wl-content-area *::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
+}
+
+.wl-content-area * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+}
+
+/* Tab & action buttons */
+.wl-tab-btn,
+.wl-action-btn {
+    background: transparent;
+    border: none;
+    color: var(--wl-muted-light);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 0 12px;
+    transition: all 0.2s ease;
+    font-family: var(--wl-font-sans);
+}
+
+#wordlens-sidepanel-root .wl-tab-btn,
+#wordlens-sidepanel-root .wl-action-btn,
+#wordlens-popup-root.wl-theme-dark .wl-tab-btn,
+#wordlens-popup-root.wl-theme-dark .wl-action-btn {
+    color: var(--wl-muted-dark);
+}
+
+.wl-tab-btn:hover,
+.wl-action-btn:hover {
+    background: var(--wl-accent-light);
+    color: var(--wl-accent);
+}
+
+#wordlens-sidepanel-root .wl-tab-btn.active,
+#wordlens-popup-root.wl-theme-dark .wl-tab-btn.active {
+    background: linear-gradient(135deg, var(--wl-accent-light), rgba(74, 222, 128, 0.3));
+    color: var(--wl-accent);
+}
+
+/* Spacer */
+.wl-spacer {
+    flex: 1;
+}
+
+/* Word header */
 .wl-header {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.wl-word-title-row {
+    display: flex;
     align-items: baseline;
-    margin-top: 4px;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .wl-word {
     font-family: var(--wl-font-serif);
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--wl-text);
+    font-size: 2rem;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--wl-text-light);
     margin: 0;
     line-height: 1.2;
 }
 
-.wl-phonetic {
+#wordlens-sidepanel-root .wl-word,
+#wordlens-popup-root.wl-theme-dark .wl-word {
+    color: var(--wl-text-dark);
+}
+
+.wl-cefr-badge {
+    font-family: var(--wl-font-mono);
     font-size: 11px;
-    color: var(--wl-muted);
-}
-
-.wl-definition {
-    font-size: 13px;
-    color: var(--wl-text);
-    line-height: 1.5;
-}
-
-.wl-tag {
-    font-size: 10px;
     font-weight: 600;
-    color: var(--wl-text);
+    padding: 3px 8px;
+    border-radius: 999px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    display: inline-block;
-    background-color: var(--wl-accent-light);
-    padding: 2px 6px;
-    border-radius: 4px;
+    background: var(--wl-accent-light);
+    color: var(--wl-accent);
 }
 
-/* a simple animation while we wait for the api to get info */
+.wl-phonetic {
+    font-family: var(--wl-font-mono);
+    font-size: 13px;
+    color: var(--wl-muted-light);
+    margin-left: 4px;
+}
+
+#wordlens-sidepanel-root .wl-phonetic,
+#wordlens-popup-root.wl-theme-dark .wl-phonetic {
+    color: var(--wl-muted-dark);
+}
+
+/* Part-of-speech border */
+.wl-pos-definition {
+    margin-top: 8px;
+    padding-left: 12px;
+    border-left: 3px solid var(--wl-pos-noun);
+}
+
+.wl-pos-definition.pos-verb {
+    border-left-color: var(--wl-pos-verb);
+}
+
+.wl-pos-definition.pos-adjective {
+    border-left-color: var(--wl-pos-adjective);
+}
+
+.wl-pos-definition.pos-adverb {
+    border-left-color: var(--wl-pos-adverb);
+}
+
+.wl-pos-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--wl-muted-light);
+    margin-bottom: 4px;
+}
+
+#wordlens-sidepanel-root .wl-pos-label,
+#wordlens-popup-root.wl-theme-dark .wl-pos-label {
+    color: var(--wl-muted-dark);
+}
+
+/* Definition blocks */
+.wl-definition {
+    font-size: 15px;
+    color: var(--wl-text-light);
+    line-height: 1.6;
+    margin: 0;
+}
+
+#wordlens-sidepanel-root .wl-definition,
+#wordlens-popup-root.wl-theme-dark .wl-definition {
+    color: var(--wl-text-dark);
+}
+
+.wl-example {
+    font-size: 14px;
+    color: var(--wl-muted-light);
+    margin-top: 6px;
+    line-height: 1.5;
+    font-style: italic;
+}
+
+#wordlens-sidepanel-root .wl-example,
+#wordlens-popup-root.wl-theme-dark .wl-example {
+    color: var(--wl-muted-dark);
+}
+
+/* Etymology section */
+.wl-etymology {
+    font-size: 13px;
+    color: var(--wl-muted-light);
+    font-style: italic;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--wl-glass-border-light);
+}
+
+#wordlens-sidepanel-root .wl-etymology,
+#wordlens-popup-root.wl-theme-dark .wl-etymology {
+    border-color: var(--wl-glass-border-dark);
+}
+
+/* Buttons (speak, copy, save) */
+.wl-icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--wl-muted-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 6px;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+}
+
+#wordlens-sidepanel-root .wl-icon-btn,
+#wordlens-popup-root.wl-theme-dark .wl-icon-btn {
+    color: var(--wl-muted-dark);
+}
+
+.wl-icon-btn:hover {
+    color: var(--wl-text-light);
+    background: rgba(128, 128, 128, 0.1);
+}
+
+#wordlens-sidepanel-root .wl-icon-btn:hover,
+#wordlens-popup-root.wl-theme-dark .wl-icon-btn:hover {
+    color: var(--wl-text-dark);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Language selector */
+.wl-lang-select {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--wl-text-light);
+    border: 1px solid var(--wl-glass-border-light);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: var(--wl-font-sans);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+#wordlens-sidepanel-root .wl-lang-select,
+#wordlens-popup-root.wl-theme-dark .wl-lang-select {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--wl-text-dark);
+    border-color: var(--wl-glass-border-dark);
+}
+
+.wl-lang-select:hover {
+    border-color: var(--wl-accent);
+}
+
+.wl-lang-select:focus {
+    border-color: var(--wl-accent);
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15);
+}
+
+/* Multi-language panel */
+.wl-lang-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.wl-lang-card {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--wl-glass-border-light);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#wordlens-sidepanel-root .wl-lang-card,
+#wordlens-popup-root.wl-theme-dark .wl-lang-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--wl-glass-border-dark);
+}
+
+.wl-lang-name {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--wl-muted-light);
+}
+
+#wordlens-sidepanel-root .wl-lang-name,
+#wordlens-popup-root.wl-theme-dark .wl-lang-name {
+    color: var(--wl-muted-dark);
+}
+
+.wl-lang-text {
+    font-size: 14px;
+    color: var(--wl-text-light);
+    line-height: 1.4;
+}
+
+#wordlens-sidepanel-root .wl-lang-text,
+#wordlens-popup-root.wl-theme-dark .wl-lang-text {
+    color: var(--wl-text-dark);
+}
+
+/* Settings icon (in panel) */
+.wl-settings-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: var(--wl-muted-light);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+#wordlens-sidepanel-root .wl-settings-icon,
+#wordlens-popup-root.wl-theme-dark .wl-settings-icon {
+    color: var(--wl-muted-dark);
+}
+
+.wl-settings-icon:hover {
+    color: var(--wl-text-light);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+#wordlens-sidepanel-root .wl-settings-icon:hover,
+#wordlens-popup-root.wl-theme-dark .wl-settings-icon:hover {
+    color: var(--wl-text-dark);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Command palette */
+#wordlens-command-palette {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2147483648;
+    display: none;
+    width: 100%;
+    max-width: 560px;
+    background: var(--wl-surface-light);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--wl-glass-border-light);
+    border-radius: 16px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    animation: wl-card-entrance 150ms ease-out;
+}
+
+#wordlens-command-palette.wl-theme-dark {
+    background: var(--wl-surface-dark);
+    border-color: var(--wl-glass-border-dark);
+}
+
+#wordlens-command-palette.wl-visible {
+    display: block;
+}
+
+.wl-cp-input-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--wl-glass-border-light);
+    gap: 12px;
+}
+
+#wordlens-command-palette.wl-theme-dark .wl-cp-input-wrapper {
+    border-color: var(--wl-glass-border-dark);
+}
+
+.wl-cp-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--wl-muted-light);
+}
+
+#wordlens-sidepanel-root .wl-cp-icon,
+#wordlens-popup-root.wl-theme-dark .wl-cp-icon,
+#wordlens-command-palette.wl-theme-dark .wl-cp-icon {
+    color: var(--wl-muted-dark);
+}
+
+.wl-cp-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--wl-font-sans);
+    font-size: 16px;
+    color: var(--wl-text-light);
+}
+
+#wordlens-sidepanel-root .wl-cp-input,
+#wordlens-popup-root.wl-theme-dark .wl-cp-input,
+#wordlens-command-palette.wl-theme-dark .wl-cp-input {
+    color: var(--wl-text-dark);
+}
+
+.wl-cp-input::placeholder {
+    color: var(--wl-muted-light);
+}
+
+#wordlens-command-palette.wl-theme-dark .wl-cp-input::placeholder {
+    color: var(--wl-muted-dark);
+}
+
+.wl-cp-close {
+    background: transparent;
+    border: none;
+    color: var(--wl-muted-light);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    transition: all 0.2s ease;
+}
+
+#wordlens-command-palette.wl-theme-dark .wl-cp-close {
+    color: var(--wl-muted-dark);
+}
+
+.wl-cp-close:hover {
+    background: rgba(128, 128, 128, 0.1);
+    color: var(--wl-text-light);
+}
+
+#wordlens-command-palette.wl-theme-dark .wl-cp-close:hover {
+    color: var(--wl-text-dark);
+}
+
+.wl-cp-results {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.wl-cp-result-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.wl-cp-result-item:hover,
+.wl-cp-result-item.wl-active {
+    background: rgba(74, 222, 128, 0.08);
+}
+
+.wl-cp-result-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--wl-accent);
+}
+
+.wl-cp-result-text {
+    font-size: 15px;
+    color: var(--wl-text-light);
+}
+
+#wordlens-command-palette.wl-theme-dark .wl-cp-result-text {
+    color: var(--wl-text-dark);
+}
+
+.wl-cp-result-meta {
+    font-size: 12px;
+    color: var(--wl-muted-light);
+    margin-left: auto;
+}
+
+#wordlens-command-palette.wl-theme-dark .wl-cp-result-meta {
+    color: var(--wl-muted-dark);
+}
+
+/* Pause-to-peek underline (under the word itself) */
+.wl-peek-underline {
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--wl-accent), #00b4d8);
+    border-radius: 2px;
+    animation: wl-underline-pulse 1.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes wl-underline-pulse {
+    0%, 100% {
+        opacity: 0.7;
+        transform: scaleX(0.9) translateX(-5%);
+        box-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scaleX(1) translateX(0);
+        box-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
+    }
+}
+
+/* Vocabulary vault (popup list) */
+.wl-vault-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.wl-vault-item {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--wl-glass-border-light);
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.2s ease;
+}
+
+#wordlens-sidepanel-root .wl-vault-item,
+#wordlens-popup-root.wl-theme-dark .wl-vault-item {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--wl-glass-border-dark);
+}
+
+.wl-vault-item:hover {
+    background: rgba(74, 222, 128, 0.05);
+    border-color: var(--wl-accent-light);
+}
+
+.wl-vault-word {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--wl-text-light);
+    margin: 0 0 4px 0;
+}
+
+#wordlens-sidepanel-root .wl-vault-word,
+#wordlens-popup-root.wl-theme-dark .wl-vault-word {
+    color: var(--wl-text-dark);
+}
+
+.wl-vault-context {
+    font-size: 13px;
+    color: var(--wl-muted-light);
+    line-height: 1.4;
+    margin: 0;
+}
+
+#wordlens-sidepanel-root .wl-vault-context,
+#wordlens-popup-root.wl-theme-dark .wl-vault-context {
+    color: var(--wl-muted-dark);
+}
+
+.wl-vault-date {
+    font-size: 11px;
+    color: var(--wl-muted-light);
+    margin-top: 6px;
+}
+
+#wordlens-sidepanel-root .wl-vault-date,
+#wordlens-popup-root.wl-theme-dark .wl-vault-date {
+    color: var(--wl-muted-dark);
+}
+
+.wl-vault-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.wl-vault-btn {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: transparent;
+    border: 1px solid var(--wl-glass-border-light);
+    color: var(--wl-muted-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#wordlens-sidepanel-root .wl-vault-btn,
+#wordlens-popup-root.wl-theme-dark .wl-vault-btn {
+    border-color: var(--wl-glass-border-dark);
+    color: var(--wl-muted-dark);
+}
+
+.wl-vault-btn:hover {
+    border-color: var(--wl-accent);
+    color: var(--wl-accent);
+}
+
+.wl-vault-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--wl-muted-light);
+}
+
+#wordlens-sidepanel-root .wl-vault-empty,
+#wordlens-popup-root.wl-theme-dark .wl-vault-empty {
+    color: var(--wl-muted-dark);
+}
+
+.wl-vault-clear-all {
+    width: 100%;
+    margin-top: 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 10px;
+    font-size: 13px;
+}
+
+.wl-vault-clear-all:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+}
+
+/* Loading skeleton */
 .wl-skeleton-pulse {
-    animation: wl-pulse 1.5s infinite;
-    background-color: #333;
+    animation: wl-pulse 1.5s infinite ease-in-out;
+    background: linear-gradient(
+        90deg,
+        rgba(128, 128, 128, 0.1) 0%,
+        rgba(128, 128, 128, 0.2) 50%,
+        rgba(128, 128, 128, 0.1) 100%
+    );
+    background-size: 200% 100%;
     border-radius: 4px;
     height: 14px;
     width: 100%;
 }
 
 @keyframes wl-pulse {
-    0% {
+    0%, 100% {
+        background-position: 200% 0;
         opacity: 0.6;
     }
-
     50% {
+        background-position: -200% 0;
         opacity: 1;
     }
+}
 
-    100% {
-        opacity: 0.6;
+/* Error state */
+.wl-error {
+    color: #ef4444;
+    padding: 12px;
+    background: rgba(239, 68, 68, 0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Side panel specific: make it fixed */
+#wordlens-sidepanel-root {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 450px;
+    height: 100vh;
+    z-index: 2147483647;
+    background: var(--wl-surface-light);
+}
+
+#wordlens-sidepanel-root.wl-theme-dark {
+    background: var(--wl-surface-dark);
+}
+
+/* Hide floating popup when side panel is active (we'll transition) */
+#wordlens-popup-root {
+    position: fixed;
+    z-index: 2147483646; /* Below side panel */
+}
+
+/* Settings icon positioned in top right of panel */
+.wl-panel-header {
+    display: flex;
+    justify-content: flex-end;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+/* Brand watermark */
+.wl-brand {
+    position: absolute;
+    bottom: 12px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.4;
+    font-size: 11px;
+    font-family: var(--wl-font-sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--wl-text-light);
+}
+
+#wordlens-sidepanel-root.wl-theme-dark .wl-brand,
+#wordlens-popup-root.wl-theme-dark .wl-brand {
+    color: var(--wl-text-dark);
+}
+
+/* Block word interaction: highlighted word cursor */
+.wl-word-interactive {
+    cursor: pointer;
+    position: relative;
+    transition: text-shadow 0.2s ease;
+}
+
+.wl-word-interactive:hover {
+    text-shadow: 0 0 0 2px var(--wl-accent);
+}
+
+/* Pause-to-peek underline (added via JS) */
+.wl-peek-word {
+    position: relative;
+    color: inherit;
+}
+
+.wl-peek-word::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 5%;
+    right: 5%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--wl-accent), #00b4d8);
+    border-radius: 1px;
+    animation: wl-underline-pulse 1.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes wl-underline-pulse {
+    0%, 100% {
+        opacity: 0.7;
+        transform: scaleX(0.9) translateX(-5%);
+        box-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
     }
-}
-
-
-.wl-example {
-    font-size: 12px;
-    color: var(--wl-muted);
-    margin-top: 4px;
-    line-height: 1.4;
-    font-style: italic;
-}
-
-
-
-/* 1. Flex Layout: Side-by-side */
-.wl-card-layout {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    /* Makes the sidebar stretch to the full height */
-    min-height: 180px;
-    /* Gives the card a nice minimum height */
-    width: 100%;
-}
-
-/* 2. The dark side panel on the left */
-.wl-sidebar {
-    width: 120px;
-    background-color: #242424;
-    border-right: 1px solid var(--wl-border);
-    border-radius: 8px 0 0 8px;
-    /* Round the left corners only */
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 10px 8px;
-    gap: 8px;
-}
-
-/* 3. The main content container on the right */
-.wl-content-area {
-    flex: 1;
-    /* Takes up all remaining space, but at least 100px for short content */
-    min-height: 100px;
-    padding: 14px 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-    /* Scroll internally when content exceeds the card's max-height */
-    /* clip children, prevents bleed onto card edges */
-}
-
-/* Hide native scrollbars on any scrollable child inside the content area,
-   while keeping scroll functionality intact */
-.wl-content-area *::-webkit-scrollbar {
-    display: none;
-}
-
-.wl-content-area * {
-    scrollbar-width: none;
-    /* Firefox */
-    -ms-overflow-style: none;
-    /* IE / Edge legacy */
-}
-
-/* 4. The Sidebar Buttons */
-.wl-tab-btn,
-.wl-action-btn {
-    background: transparent;
-    border: none;
-    color: var(--wl-muted);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    width: 100%;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    padding: 0 8px;
-    transition: all 0.2s ease;
-}
-
-/* Hover effect */
-.wl-tab-btn:hover,
-.wl-action-btn:hover {
-    background-color: #333;
-    color: var(--wl-text);
-}
-
-/* Active tab state */
-.wl-tab-btn.active {
-    background-color: var(--wl-accent-light);
-    color: var(--wl-accent);
-}
-
-/* 5. A spacer to push bottom buttons down */
-.wl-spacer {
-    flex: 1;
-    /* Pushes the Listen/Save buttons to the very bottom automatically */
-}
-
-/* The new Speaker button for headers */
-.wl-speak-btn {
-    background: transparent;
-    border: none;
-    color: var(--wl-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    padding: 4px;
-    border-radius: 4px;
-}
-
-.wl-speak-btn:hover {
-    color: var(--wl-text);
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.wl-copy-btn {
-    background: transparent;
-    border: none;
-    color: var(--wl-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    padding: 4px;
-    border-radius: 4px;
-}
-
-.wl-copy-btn:hover {
-    color: var(--wl-text);
-    background-color: rgba(255, 255, 255, 0.1);
+    50% {
+        opacity: 1;
+        transform: scaleX(1) translateX(0);
+        box-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
+    }
 }

@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(cp -f \"/f/Github-Code/WordLens/extension/background.js\" \"/f/Github-Code/WordLens/dist/extension/background.js\")",
+      "Bash(cp -f \"/f/Github-Code/WordLens/extension/content.css\" \"/f/Github-Code/WordLens/dist/extension/content.css\")",
+      "Bash(cp -f \"/f/Github-Code/WordLens/extension/content.js\" \"/f/Github-Code/WordLens/dist/extension/content.js\")",
+      "Bash(cp -f \"/f/Github-Code/WordLens/extension/popup.css\" \"/f/Github-Code/WordLens/dist/extension/popup.css\")",
+      "Bash(cp -f \"/f/Github-Code/WordLens/extension/popup.html\" \"/f/Github-Code/WordLens/dist/extension/popup.html\")",
+      "Bash(node --check \"/f/Github-Code/WordLens/extension/background.js\")",
+      "Bash(node --check \"/f/Github-Code/WordLens/extension/content.js\")",
+      "Bash(node --check \"/f/Github-Code/WordLens/extension/sidepanel.js\")",
+      "Bash(node --check \"/f/Github-Code/WordLens/extension/popup.js\")",
+      "Bash(cp -f \"/f/Github-Code/WordLens/extension/sidepanel.js\" \"/f/Github-Code/WordLens/dist/extension/sidepanel.js\")",
+      "Bash(cp -f \"/f/Github-Code/WordLens/extension/sidepanel.html\" \"/f/Github-Code/WordLens/dist/extension/sidepanel.html\")",
+      "Bash(cp -f \"/f/Github-Code/WordLens/extension/popup.js\" \"/f/Github-Code/WordLens/dist/extension/popup.js\")",
+      "Bash(cp:*)"
     ]
   }
 }
