@@ -1,29 +1,87 @@
+// In-memory cache for API responses (TTL: 5 minutes)
+const apiCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(type, query) {
+  return `${type}:${query.toLowerCase().trim()}`;
+}
+
+function getCached(type, query) {
+  const key = getCacheKey(type, query);
+  const entry = apiCache.get(key);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+    return entry.data;
+  }
+  if (entry) apiCache.delete(key);
+  return null;
+}
+
+function setCache(type, query, data) {
+  const key = getCacheKey(type, query);
+  apiCache.set(key, { data, timestamp: Date.now() });
+}
+
+// Retry helper with exponential backoff
+async function fetchWithRetry(url, options, maxRetries = 2) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        // For 4xx errors (except 429), don't retry — client error
+        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        // For 5xx errors and 429 (rate limit), retry
+        if (i === maxRetries - 1) throw new Error(`Failed after ${maxRetries} attempts: HTTP ${response.status}`);
+        const delay = 500 * (i + 1); // 500ms, 1000ms
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      return response;
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+      // Network errors: retry after delay
+      await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+    }
+  }
+}
+
 // Listen for messages from content.js
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // Helper to safely send response, handling cases where the port might be closed
+    const safeSendResponse = (response) => {
+      try {
+        sendResponse(response);
+      } catch (err) {
+        // Port closed errors are expected when popup closes before response arrives
+        if (err.message && err.message.includes('The message port closed')) {
+          // Silently ignore - the content script is gone
+          return;
+        }
+        console.error('Error sending response:', err);
+      }
+    };
 
     // We check the "type" field to know what kind of request this is
     if (message.type === 'LOOKUP_WORD') {
         // Call the free dictionary API
         lookupWord(message.word)
-            .then(data => sendResponse({ success: true, data }))
-            .catch(err => sendResponse({ success: false, error: err.message }));
-
-        // IMPORTANT: returning true tells Chrome "I will call sendResponse later (asynchronously)"
-        // Without this, Chrome closes the message channel immediately and our response never arrives.
+            .then(data => safeSendResponse({ success: true, data }))
+            .catch(err => safeSendResponse({ success: false, error: err.message }));
         return true;
     }
 
     if (message.type === 'SUMMARIZE_SENTENCE') {
         summarizeSentence(message.text, message.apiKey)
-            .then(data => sendResponse({ success: true, data }))
-            .catch(err => sendResponse({ success: false, error: err.message }));
+            .then(data => safeSendResponse({ success: true, data }))
+            .catch(err => safeSendResponse({ success: false, error: err.message }));
         return true;
     }
 
     if (message.type === 'TRANSLATE_TEXT') {
         translateText(message.text)
-            .then(data => sendResponse({ success: true, data }))
-            .catch(err => sendResponse({ success: false, error: err.message }));
+            .then(data => safeSendResponse({ success: true, data }))
+            .catch(err => safeSendResponse({ success: false, error: err.message }));
         return true;
     }
 
@@ -35,35 +93,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 async function lookupWord(word) {
-    const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
+  // Check cache first
+  const cached = getCached('dict', word);
+  if (cached) return cached;
 
-    const response = await fetch(url);
+  const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
 
-    if (!response.ok) {
-        throw new Error('Word not found');
-    }
+  const response = await fetchWithRetry(url, {});
 
-    const json = await response.json();
-    const entry = json[0];
+  if (!response.ok) {
+      throw new Error('Word not found');
+  }
 
-    const phonetic = entry.phonetic
-        || (entry.phonetics && entry.phonetics.find(p => p.text)?.text)
-        || '';
+  const json = await response.json();
+  const entry = json[0];
 
-    const audio = entry.phonetics?.find(p => p.audio)?.audio || '';
+  const phonetic = entry.phonetic
+      || (entry.phonetics && entry.phonetics.find(p => p.text)?.text)
+      || '';
 
-    const meanings = entry.meanings.map(m => ({
-        partOfSpeech: m.partOfSpeech,
-        definition: m.definitions[0]?.definition || '',
-        example: m.definitions[0]?.example || '',
-    }));
+  const audio = entry.phonetics?.find(p => p.audio)?.audio || '';
 
-    return {
-        word: entry.word,
-        phonetic,
-        audio,
-        meanings,
-    };
+  const meanings = entry.meanings.map(m => ({
+      partOfSpeech: m.partOfSpeech,
+      definition: m.definitions[0]?.definition || '',
+      example: m.definitions[0]?.example || '',
+  }));
+
+  const result = {
+      word: entry.word,
+      phonetic,
+      audio,
+      meanings,
+  };
+
+  // Cache successful results only
+  setCache('dict', word, result);
+  return result;
 }
 
 
@@ -72,7 +138,12 @@ async function summarizeSentence(text, apiKey) {
     if (!apiKey) {
         throw new Error('No API key. Click the WordLens icon and add your free Groq API key.');
     }
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+
+    // Check cache (ignore API key - same text yields same summary)
+    const cached = getCached('ai', text);
+    if (cached) return cached;
+
+    const options = {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -93,7 +164,10 @@ async function summarizeSentence(text, apiKey) {
                 }
             ]
         }),
-    });
+    };
+
+    const response = await fetchWithRetry('https://api.groq.com/openai/v1/chat/completions', options);
+
     if (!response.ok) {
         const errBody = await response.text();
         throw new Error(`Groq error (${response.status}): ${errBody}`);
@@ -102,14 +176,23 @@ async function summarizeSentence(text, apiKey) {
 
     // Groq uses OpenAI format: choices[0].message.content
     const reply = json.choices?.[0]?.message?.content || 'No response received.';
-    return { summary: reply };
+    const result = { summary: reply };
+
+    // Cache successful results only
+    setCache('ai', text, result);
+    return result;
 }
 
 // Google Translate API - free open endpoint
-async function translateText(text) {
-    // sl=auto (auto-detect source language), tl=en (translate to English)
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
-    const response = await fetch(url);
+async function translateText(text, targetLang = 'en') {
+    // Check cache first - include target language in cache key
+    const cacheKey = `${targetLang}:${text}`;
+    const cached = getCached('tr', cacheKey);
+    if (cached) return cached;
+
+    // sl=auto (auto-detect source language), tl=targetLang
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`;
+    const response = await fetchWithRetry(url, {});
     if (!response.ok) {
         throw new Error('Translation network error');
     }
@@ -122,5 +205,16 @@ async function translateText(text) {
             if (chunk[0]) translated += chunk[0];
         });
     }
-    return { translation: translated };
+
+    // Extract detected source language from json[1][0][0] if available
+    let detectedLang = null;
+    if (json && json[1] && json[1][0] && json[1][0][0]) {
+      detectedLang = json[1][0][0];
+    }
+
+    const result = { translation: translated, detectedLang };
+
+    // Cache successful translations (key includes target language)
+    setCache('tr', cacheKey, result);
+    return result;
 }

@@ -1,19 +1,92 @@
-// we inject - create an empty div , give it id and glue it to the bottom of the page 
+// We inject - create an empty div, give it id and glue it to the bottom of the page
 const POPUP_ID = 'wordlens-popup-root';
 let popupEl = null;
 
 // Dragging state
 let isDragging = false;
+let wasJustDragged = false; // Prevents hidePopup after dragging
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
 // Map to hold speak-button text content (avoids broken data-attribute escaping)
 const speakTextMap = new Map();
 
+// Configuration constants
+const CONFIG = {
+  POPUP_WIDTH: 400,
+  POPUP_HEIGHT_MIN: 250,
+  MARGIN: 12,
+  MAX_SELECTION_LENGTH: 500, // Increased from 300 for flexibility
+  MOUSEUP_DELAY: 10,
+  CACHE_TTL: 5 * 60 * 1000, // 5 minutes in milliseconds
+};
+
+// Chrome API compatibility shim - ensures we have access to chrome.runtime and chrome.storage
+const chromeSafe = (() => {
+  if (typeof chrome === 'undefined' || !chrome.runtime) {
+    console.warn('WordLens: Chrome extension APIs not available');
+    return null;
+  }
+  return chrome;
+})();
 
 let currentTab = 'dictionary';
 let currentSelection = '';
 let isCurrentSelectionWord = true;
+
+// Translate: target language selection (default English)
+let targetLanguage = 'en'; // ISO 639-1 codes (en, es, hi, ru, ja, zh-CN, etc.)
+
+// Supported languages for translation dropdown
+const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'zh-CN', name: 'Chinese (Simplified)' },
+  { code: 'zh-TW', name: 'Chinese (Traditional)' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'it', name: 'Italian' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'ar', name: 'Arabic' },
+  { code: 'ko', name: 'Korean' },
+];
+
+// Helper: get language name from code
+function getLanguageName(code) {
+  const lang = LANGUAGES.find(l => l.code === code);
+  return lang ? lang.name : code;
+}
+
+// Load config from storage and listen for changes
+function loadConfig() {
+  if (chromeSafe && chromeSafe.storage && chromeSafe.storage.local) {
+    chrome.storage.local.get(['maxSelectionLength'], (result) => {
+      if (result.maxSelectionLength) {
+        const val = parseInt(result.maxSelectionLength, 10);
+        if (!isNaN(val) && val > 0) {
+          CONFIG.MAX_SELECTION_LENGTH = val;
+        }
+      }
+    });
+  }
+}
+
+if (chromeSafe && chromeSafe.storage && chromeSafe.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (changes.maxSelectionLength) {
+      const newVal = parseInt(changes.maxSelectionLength.newValue, 10);
+      if (!isNaN(newVal) && newVal > 0) {
+        CONFIG.MAX_SELECTION_LENGTH = newVal;
+      }
+    }
+  });
+}
+
+// Load config on startup
+loadConfig();
 
 function renderMasterContainer(text, isWord) {
   currentSelection = text;
@@ -90,6 +163,32 @@ function renderMasterContainer(text, isWord) {
 
 //attches clicks to the new sidebar
 
+// Global keyboard shortcuts (attached once in initWordLens)
+function handleGlobalKeydown(e) {
+  if (!popupEl || !popupEl.classList.contains('wl-show')) return;
+
+  if (e.key === 'Escape') {
+    hidePopup();
+    return;
+  }
+
+  if (e.key === '1') {
+    switchTab('dictionary');
+  } else if (e.key === '2') {
+    switchTab('ai');
+  } else if (e.key === '3') {
+    switchTab('translate');
+  }
+}
+
+function switchTab(tabName) {
+  if (currentTab !== tabName) {
+    currentTab = tabName;
+    updateActiveTabStyles();
+    loadTabContent();
+  }
+}
+
 function setupTabListners() {
   document.getElementById('wl-tab-dict').addEventListener('click', () => {
     currentTab = 'dictionary';
@@ -127,7 +226,16 @@ function setupTabListners() {
 
     if (!word || !textContent) return; // Prevent saving empty loaders
 
+    if (!chromeSafe || !chromeSafe.storage || !chromeSafe.storage.local) {
+      console.error('WordLens: Storage API not available');
+      return;
+    }
+
     chrome.storage.local.get(['savedWords'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Storage get error:', chrome.runtime.lastError);
+        return;
+      }
       const words = result.savedWords || [];
       // avoid duplicates based on exact word
       const existsIndex = words.findIndex(w => w.word.toLowerCase() === word.toLowerCase());
@@ -135,6 +243,10 @@ function setupTabListners() {
       if (existsIndex === -1) {
         words.push({ word, meaning: textContent, date: Date.now() });
         chrome.storage.local.set({ savedWords: words }, () => {
+          if (chrome.runtime.lastError) {
+            console.error('Storage set error:', chrome.runtime.lastError);
+            return;
+          }
           // Provide visual feedback (Green Saved state)
           const saveIcon = document.getElementById('wl-icon-save');
           const btnSpan = document.querySelector('#wl-btn-save span');
@@ -154,40 +266,85 @@ function setupTabListners() {
   });
 
   document.getElementById('wl-btn-settings').addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS_PAGE' });
+    if (chromeSafe && chromeSafe.runtime && chromeSafe.runtime.sendMessage) {
+      chrome.runtime.sendMessage({ type: 'OPEN_OPTIONS_PAGE' });
+    } else {
+      console.error('WordLens: Runtime API not available for opening options page');
+    }
   });
 
   // Check if word is already saved on load to fill the star
-  chrome.storage.local.get(['savedWords'], (result) => {
-    const words = result.savedWords || [];
-    const exists = words.some(w => w.word.toLowerCase() === currentSelection.toLowerCase());
-    if (exists) {
-      const saveIcon = document.getElementById('wl-icon-save');
-      const btnSpan = document.querySelector('#wl-btn-save span');
-      if (saveIcon) {
-        saveIcon.setAttribute('fill', 'currentColor');
-        saveIcon.style.color = 'var(--wl-accent)';
+  if (chromeSafe && chromeSafe.storage && chromeSafe.storage.local) {
+    chrome.storage.local.get(['savedWords'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Storage get error:', chrome.runtime.lastError);
+        return;
       }
-      if (btnSpan) btnSpan.textContent = "Saved";
-    }
-  });
+      const words = result.savedWords || [];
+      const exists = words.some(w => w.word.toLowerCase() === currentSelection.toLowerCase());
+      if (exists) {
+        const saveIcon = document.getElementById('wl-icon-save');
+        const btnSpan = document.querySelector('#wl-btn-save span');
+        if (saveIcon) {
+          saveIcon.setAttribute('fill', 'currentColor');
+          saveIcon.style.color = 'var(--wl-accent)';
+        }
+        if (btnSpan) btnSpan.textContent = "Saved";
+      }
+    });
+  }
 
   // Attach a delegated event listener to handle clicks on the dynamic pronounce buttons
   document.getElementById('wl-main-content').addEventListener('click', (e) => {
     const speakBtn = e.target.closest('.wl-speak-btn');
     if (speakBtn) {
-      // Use the JS map to retrieve full text (avoids broken HTML attribute escaping)
-      const speakId = speakBtn.dataset.speakId;
-      const textToSpeak = (speakId && speakTextMap.get(speakId)) || currentSelection;
-      // Cancel any ongoing speech before starting new one
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
+      // Check if this is a phonetic audio button (has data-audio-url) or TTS button (has data-speak-id)
+      const audioUrl = speakBtn.dataset.audioUrl;
+      if (audioUrl) {
+        // Play the actual audio file
+        window.speechSynthesis.cancel(); // Stop any ongoing TTS
+        const audio = new Audio(audioUrl);
+        audio.play().catch(err => console.error('Audio play failed:', err));
+      } else {
+        // Text-to-speech using browser's speech synthesis
+        const speakId = speakBtn.dataset.speakId;
+        const textToSpeak = (speakId && speakTextMap.get(speakId)) || currentSelection;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    const copyBtn = e.target.closest('.wl-copy-btn');
+    if (copyBtn) {
+      const textToCopy = copyBtn.dataset.copyText || currentSelection;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        // Visual feedback
+        const originalHTML = copyBtn.innerHTML;
+        copyBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        copyBtn.style.color = 'var(--wl-accent)';
+        setTimeout(() => {
+          copyBtn.innerHTML = originalHTML;
+          copyBtn.style.color = '';
+        }, 2000);
+      }).catch(err => {
+        console.error('Copy failed:', err);
+      });
+    }
+
+    const retryBtn = e.target.closest('.wl-retry-btn');
+    if (retryBtn) {
+      if (chromeSafe && chromeSafe.runtime && chromeSafe.runtime.sendMessage) {
+        loadTabContent(); // Retry the current request
+      } else {
+        console.error('WordLens: Cannot retry - runtime API not available');
+      }
     }
   });
 }
+
 
 
 
@@ -220,6 +377,9 @@ function initWordLens() {
 
   // Setup drag-to-move on the popup
   setupDrag();
+
+  // Global keyboard shortcuts (only added once)
+  document.addEventListener('keydown', handleGlobalKeydown);
 }
 
 
@@ -244,45 +404,134 @@ function loadTabContent() {
       mainContentArea.innerHTML = renderErrorHtml(currentSelection, "The Dictionary tab only works for single words. Try AI Summary or Translate!");
       return;
     }
+
+    if (!chromeSafe || !chromeSafe.runtime || !chromeSafe.runtime.sendMessage) {
+      mainContentArea.innerHTML = renderErrorHtml(currentSelection,
+        "Runtime messaging not available. Please reload the extension."
+      );
+      return;
+    }
+
     chrome.runtime.sendMessage({ type: 'LOOKUP_WORD', word: currentSelection }, (response) => {
+      // Check for runtime errors first (like "The message port closed before a response was received.")
+      if (chrome.runtime.lastError) {
+        // Silently ignore if popup was closed - this is expected
+        if (popupEl && !popupEl.classList.contains('wl-show')) {
+          return;
+        }
+        console.error('SendMessage error:', chrome.runtime.lastError);
+        return;
+      }
+
       // If the user closed the popup or clicked another tab while waiting, ignore the response
-      if (!popupEl.classList.contains('wl-show') || currentTab !== 'dictionary') return;
+      if (!popupEl || !popupEl.classList.contains('wl-show') || currentTab !== 'dictionary') return;
 
       if (response && response.success) {
         mainContentArea.innerHTML = renderDefinitionHtml(response.data);
       } else {
         // Fallback: the dictionary API doesn't know shortened words like "can't"
-        mainContentArea.innerHTML = renderErrorHtml(currentSelection, "Word not found in the standard dictionary. Try the Summary or Translate tabs!");
+        const errorMsg = response?.error || 'Word not found';
+        mainContentArea.innerHTML = renderErrorHtml(currentSelection,
+          `${errorMsg}. Try the AI Summary or Translate tabs for other ways to understand this text.`
+        );
       }
     });
 
   } else if (currentTab === 'ai') {
+    if (!chromeSafe || !chromeSafe.storage || !chromeSafe.storage.local) {
+      mainContentArea.innerHTML = renderErrorHtml(currentSelection,
+        "Storage API not available. Please reload the extension."
+      );
+      return;
+    }
+
     chrome.storage.local.get(['groqApiKey'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('Storage get error:', chrome.runtime.lastError);
+        mainContentArea.innerHTML = renderErrorHtml(currentSelection,
+          'Failed to access storage. Please reload the page.'
+        );
+        return;
+      }
       const apiKey = result.groqApiKey;
       if (!apiKey) {
-        mainContentArea.innerHTML = renderErrorHtml(currentSelection, "Add your free Groq API key in the WordLens popup limits to unlock AI Summary.");
+        mainContentArea.innerHTML = renderErrorHtml(currentSelection,
+          "AI Summary requires a free Groq API key. Click the Settings (gear) icon to add your key and unlock this feature."
+        );
+        return;
+      }
+
+      if (!chromeSafe || !chromeSafe.runtime || !chromeSafe.runtime.sendMessage) {
+        mainContentArea.innerHTML = renderErrorHtml(currentSelection,
+          "Runtime messaging not available. Please reload the extension."
+        );
         return;
       }
 
       chrome.runtime.sendMessage({ type: 'SUMMARIZE_SENTENCE', text: currentSelection, apiKey: apiKey }, (response) => {
-        if (!popupEl.classList.contains('wl-show') || currentTab !== 'ai') return;
+        // Check for runtime errors first (like "The message port closed before a response was received.")
+        if (chrome.runtime.lastError) {
+          // Silently ignore if popup was closed - this is expected
+          if (popupEl && !popupEl.classList.contains('wl-show')) {
+            return;
+          }
+          console.error('SendMessage error:', chrome.runtime.lastError);
+          return;
+        }
+
+        if (!popupEl || !popupEl.classList.contains('wl-show') || currentTab !== 'ai') return;
 
         if (response && response.success) {
           mainContentArea.innerHTML = renderSummaryHtml(currentSelection, response.data.summary);
         } else {
-          mainContentArea.innerHTML = renderErrorHtml(currentSelection, response?.error || 'Failed to connect to Groq AI.');
+          const err = response?.error || 'Failed to connect to Groq AI.';
+          mainContentArea.innerHTML = renderErrorHtml(currentSelection,
+            `${err} Verify your API key in Settings and check your internet connection.`
+          );
         }
       });
     });
 
   } else if (currentTab === 'translate') {
-    chrome.runtime.sendMessage({ type: 'TRANSLATE_TEXT', text: currentSelection }, (response) => {
-      if (!popupEl.classList.contains('wl-show') || currentTab !== 'translate') return;
+    if (!chromeSafe || !chromeSafe.runtime || !chromeSafe.runtime.sendMessage) {
+      mainContentArea.innerHTML = renderErrorHtml(currentSelection,
+        "Runtime messaging not available. Please reload the extension."
+      );
+      return;
+    }
+
+    chrome.runtime.sendMessage({ type: 'TRANSLATE_TEXT', text: currentSelection, targetLang: targetLanguage }, (response) => {
+      // Check for runtime errors first
+      if (chrome.runtime.lastError) {
+        // Silently ignore if popup was closed - this is expected
+        if (popupEl && !popupEl.classList.contains('wl-show')) {
+          return;
+        }
+        console.error('SendMessage error:', chrome.runtime.lastError);
+        return;
+      }
+
+      if (!popupEl || !popupEl.classList.contains('wl-show') || currentTab !== 'translate') return;
 
       if (response && response.success) {
-        mainContentArea.innerHTML = renderSummaryHtml(currentSelection, response.data.translation);
+        const { translation, detectedLang } = response.data;
+        mainContentArea.innerHTML = renderTranslateHtml(currentSelection, translation, detectedLang, targetLanguage);
+
+        // Attach language selector change listener
+        const langSelect = document.getElementById('wl-lang-select');
+        if (langSelect) {
+          langSelect.value = targetLanguage; // Ensure dropdown reflects current targetLanguage
+          langSelect.addEventListener('change', (e) => {
+            targetLanguage = e.target.value;
+            // Re-fetch translation with new target language
+            loadTabContent();
+          });
+        }
       } else {
-        mainContentArea.innerHTML = renderErrorHtml(currentSelection, response?.error || 'Translation failed.');
+        const err = response?.error || 'Translation failed.';
+        mainContentArea.innerHTML = renderErrorHtml(currentSelection,
+          `${err} Check your connection or try a shorter selection.`
+        );
       }
     });
   }
@@ -294,17 +543,18 @@ function handleMouseUp(event) {
   // If we just finished dragging, don't trigger a new lookup
   if (isDragging) {
     isDragging = false;
+    wasJustDragged = true; // Mark that we just completed a drag
     return;
   }
   // If the user is selecting text inside our popup itself, don't trigger the logic
   if (popupEl.contains(event.target)) return;
 
   setTimeout(() => {
-    //windows .get selection is used to get the selected , its inbuilt
+    // windows .get selection is used to get the selected , its inbuilt
     const selection = window.getSelection();
     const text = selection.toString().trim();
 
-    if (text.length > 0 && text.length < 300) {
+    if (text.length > 0 && text.length < CONFIG.MAX_SELECTION_LENGTH) {
       // Determine if it's a single word or a phrase/sentence
       //   /\s+/ is a regex meaning "one or more spaces"). If the result is a single chunk, it's a word. If it's multiple chunks, it's a sentence. That's how "Dictionary" vs "Lens Summary" gets decided.
       const isWord = text.split(/\s+/).length === 1;
@@ -319,10 +569,16 @@ function handleMouseUp(event) {
       // If the selection is empty (they clicked away), hide the card
       hidePopup();
     }
-  }, 10);
+  }, CONFIG.MOUSEUP_DELAY);
 }
 
 function handleMouseDown(event) {
+  // If we just finished dragging, ignore this click to prevent accidental hide
+  if (wasJustDragged) {
+    wasJustDragged = false;
+    return;
+  }
+
   // Hide popup if the user clicks anywhere outside of it
   if (popupEl && !popupEl.contains(event.target)) {
     const selection = window.getSelection();
@@ -334,26 +590,23 @@ function handleMouseDown(event) {
 
 function showPopup(x, rect, text, isWord) {
   // Use fixed positioning (viewport coords) so dragging is simple and consistent.
-  // The popup card is 400px wide; keep a 12px margin from each edge.
-  const POPUP_WIDTH = 400;
-  const MARGIN = 12;
+  // The popup card is CONFIG.POPUP_WIDTH wide; keep a CONFIG.MARGIN from each edge.
 
   // x comes from rect.left (already viewport coords — no scrollX needed for fixed)
   let safeX = rect.left;
-  if (safeX + POPUP_WIDTH > window.innerWidth - MARGIN) {
-    safeX = window.innerWidth - POPUP_WIDTH - MARGIN;
+  if (safeX + CONFIG.POPUP_WIDTH > window.innerWidth - CONFIG.MARGIN) {
+    safeX = window.innerWidth - CONFIG.POPUP_WIDTH - CONFIG.MARGIN;
   }
-  if (safeX < MARGIN) safeX = MARGIN;
+  if (safeX < CONFIG.MARGIN) safeX = CONFIG.MARGIN;
 
-  // Check if there's enough room below the selection (~250px for the card)
-  const popupHeight = 250;
+  // Check if there's enough room below the selection (~CONFIG.POPUP_HEIGHT_MIN for the card)
   const spaceBelow = window.innerHeight - rect.bottom;
   let safeY;
 
-  if (spaceBelow < popupHeight) {
+  if (spaceBelow < CONFIG.POPUP_HEIGHT_MIN) {
     // Not enough room below — place it ABOVE the selection
-    safeY = rect.top - popupHeight - 8;
-    if (safeY < MARGIN) safeY = MARGIN;
+    safeY = rect.top - CONFIG.POPUP_HEIGHT_MIN - 8;
+    if (safeY < CONFIG.MARGIN) safeY = CONFIG.MARGIN;
   } else {
     // Plenty of room below — place it under the selection as usual
     safeY = rect.bottom + 8;
@@ -383,6 +636,7 @@ function setupDrag() {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
     isDragging = true;
+    wasJustDragged = false;
 
     // Since popup is position:fixed, getBoundingClientRect().left IS the CSS left value.
     const popupRect = popupEl.getBoundingClientRect();
@@ -400,16 +654,14 @@ function setupDrag() {
     if (!isDragging) return;
 
     // With position:fixed, no scrollX/Y adjustment needed — clientX IS the viewport coord.
-    const POPUP_WIDTH = 400;
-    const POPUP_HEIGHT = popupEl.offsetHeight || 250;
-    const MARGIN = 12;
+    const popupHeight = popupEl.offsetHeight || CONFIG.POPUP_HEIGHT_MIN;
 
     let newX = e.clientX - dragOffsetX;
     let newY = e.clientY - dragOffsetY;
 
     // Clamp so the popup never slides fully off-screen
-    newX = Math.max(MARGIN, Math.min(newX, window.innerWidth - POPUP_WIDTH - MARGIN));
-    newY = Math.max(MARGIN, Math.min(newY, window.innerHeight - POPUP_HEIGHT - MARGIN));
+    newX = Math.max(CONFIG.MARGIN, Math.min(newX, window.innerWidth - CONFIG.POPUP_WIDTH - CONFIG.MARGIN));
+    newY = Math.max(CONFIG.MARGIN, Math.min(newY, window.innerHeight - popupHeight - CONFIG.MARGIN));
 
     popupEl.style.left = `${newX}px`;
     popupEl.style.top = `${newY}px`;
@@ -419,6 +671,7 @@ function setupDrag() {
     if (isDragging) {
       popupEl.style.cursor = 'grab';
       // isDragging is set to false in the main handleMouseUp
+      // wasJustDragged is set there as well
     }
   });
 }
@@ -431,6 +684,8 @@ function hidePopup() {
     setTimeout(() => {
       popupEl.style.display = 'none';
       popupEl.innerHTML = '';
+      speakTextMap.clear(); // Prevent memory leak
+      wasJustDragged = false; // Reset drag flag
     }, 200);
   }
 }
@@ -449,13 +704,26 @@ function renderDefinitionHtml(data) {
   const speakId = 'speak-' + Date.now();
   speakTextMap.set(speakId, data.word);
 
+  const fullText = `${data.word} ${data.phonetic ? '(' + data.phonetic + ')' : ''}\n\n${data.meanings.map(m => `${m.partOfSpeech}: ${m.definition}${m.example ? '\n"' + m.example + '"' : ''}`).join('\n\n')}`;
+
+  // PHONETIC AUDIO BUTTON (if audio URL exists)
+  const audioBtnHtml = data.audio
+    ? `<button class="wl-speak-btn" data-audio-url="${escapeHTML(data.audio)}" title="Play pronunciation">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+      </button>`
+    : '';
+
   return `
     <div class="wl-header" style="align-items: center; justify-content: flex-start; gap: 8px;">
       <h3 class="wl-word">${escapeHTML(data.word)}</h3>
-      <button class="wl-speak-btn" data-speak-id="${speakId}" title="Pronounce">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+      ${audioBtnHtml}
+      <button class="wl-speak-btn" data-speak-id="${speakId}" title="Text-to-speech">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
       </button>
       <span class="wl-phonetic" style="margin-left: 4px;">${data.phonetic || ''}</span>
+      <button class="wl-copy-btn" data-copy-text="${escapeHTML(fullText)}" title="Copy to clipboard" style="margin-left: auto;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
     </div>
     <div style="overflow-y: auto; max-height: 180px; padding-right: 4px; margin-top: 8px;">
       ${meaningsHTML}
@@ -468,15 +736,60 @@ function renderSummaryHtml(title, text) {
   const speakId = 'speak-' + Date.now();
   speakTextMap.set(speakId, text);
 
+  const fullText = `${title}\n\n${text}`;
+
   return `
     <div class="wl-header" style="align-items: center; justify-content: flex-start; gap: 8px;">
       <h3 class="wl-word" style="font-size: 14px; font-weight: 500;">${escapeHTML(title.slice(0, 40))}${title.length > 40 ? '...' : ''}</h3>
       <button class="wl-speak-btn" data-speak-id="${speakId}" title="Listen to summary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
       </button>
+      <button class="wl-copy-btn" data-copy-text="${escapeHTML(fullText)}" title="Copy to clipboard" style="margin-left: auto;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
     </div>
     <div style="overflow-y: auto; max-height: 180px; padding-right: 4px; margin-top: 8px;">
       <p class="wl-definition">${escapeHTML(text)}</p>
+    </div>
+  `;
+}
+
+// Specialized render for translate tab with language dropdown and detected source display
+function renderTranslateHtml(originalText, translation, detectedLang, targetLang) {
+  // Store full translation for TTS
+  const speakId = 'speak-' + Date.now();
+  speakTextMap.set(speakId, translation);
+  const fullText = `${originalText}\n\n${translation}`;
+
+  // Build language selector options
+  const langOptions = LANGUAGES.map(lang =>
+    `<option value="${lang.code}" ${lang.code === targetLang ? 'selected' : ''}>${lang.name}</option>`
+  ).join('');
+
+  // Show detected source language
+  const detectedDisplay = detectedLang ? `From: ${getLanguageName(detectedLang)}` : 'Auto-detected';
+
+  return `
+    <div class="wl-header" style="align-items: center; justify-content: flex-start; gap: 8px; flex-wrap: wrap;">
+      <h3 class="wl-word" style="font-size: 14px; font-weight: 500;">${escapeHTML(originalText.slice(0, 30))}${originalText.length > 30 ? '...' : ''}</h3>
+      <button class="wl-speak-btn" data-speak-id="${speakId}" title="Listen to translation">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+      </button>
+      <button class="wl-copy-btn" data-copy-text="${escapeHTML(fullText)}" title="Copy to clipboard" style="margin-left: auto;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
+    </div>
+
+    <!-- Language controls: dropdown and detected source -->
+    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
+      <select id="wl-lang-select" class="wl-lang-select" style="flex: 1; min-width: 120px;">
+        ${langOptions}
+      </select>
+      <span class="wl-detected" style="font-size: 11px; color: var(--wl-muted);">${detectedDisplay}</span>
+    </div>
+
+    <div style="overflow-y: auto; margin-top: 8px;">
+      <p class="wl-definition">${escapeHTML(translation)}</p>
     </div>
   `;
 }
@@ -489,6 +802,9 @@ function renderErrorHtml(title, errorMsg) {
     <p class="wl-definition" style="color: var(--wl-muted); margin-top: 6px;">
       ${errorMsg}
     </p>
+    <div style="margin-top: 8px; display: flex; gap: 8px;">
+      <button class="wl-action-btn wl-retry-btn" style="flex: 1; width: auto;">Retry</button>
+    </div>
   `;
 }
 

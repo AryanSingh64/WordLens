@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { BookMarked, Trash2, Key, Check } from 'lucide-react';
+import { BookMarked, Trash2, Key, Check, Settings } from 'lucide-react';
 
 function Options() {
     const [savedWords, setSavedWords] = useState([]);
     const [apiKey, setApiKey] = useState('');
+    const [maxSelectionLength, setMaxSelectionLength] = useState(500);
     const [saveStatus, setSaveStatus] = useState('');
+    const [settingsStatus, setSettingsStatus] = useState('');
 
     // Load initial data from Chrome Storage
     useEffect(() => {
         if (typeof chrome !== 'undefined' && chrome.storage) {
-            chrome.storage.local.get(['savedWords', 'groqApiKey'], (result) => {
+            chrome.storage.local.get(['savedWords', 'groqApiKey', 'maxSelectionLength'], (result) => {
                 if (result.savedWords) {
                     // Sort newest first
                     setSavedWords(result.savedWords.sort((a, b) => b.date - a.date));
                 }
                 if (result.groqApiKey) {
                     setApiKey(result.groqApiKey);
+                }
+                if (result.maxSelectionLength) {
+                    setMaxSelectionLength(result.maxSelectionLength);
                 }
             });
         }
@@ -30,11 +35,34 @@ function Options() {
         }
     };
 
+    const handleSaveSettings = () => {
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+            const maxLen = parseInt(maxSelectionLength, 10);
+            if (isNaN(maxLen) || maxLen < 1 || maxLen > 2000) {
+                setSettingsStatus('Please enter a number between 1 and 2000');
+                return;
+            }
+            chrome.storage.local.set({ maxSelectionLength: maxLen }, () => {
+                setSettingsStatus('Saved!');
+                setTimeout(() => setSettingsStatus(''), 2500);
+            });
+        }
+    };
+
     const handleDeleteWord = (dateId) => {
         const newWords = savedWords.filter(w => w.date !== dateId);
         setSavedWords(newWords);
         if (typeof chrome !== 'undefined' && chrome.storage) {
             chrome.storage.local.set({ savedWords: newWords });
+        }
+    };
+
+    const handleClearAllWords = () => {
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+            if (window.confirm('Are you sure you want to delete all saved words? This cannot be undone.')) {
+                setSavedWords([]);
+                chrome.storage.local.set({ savedWords: [] });
+            }
         }
     };
 
@@ -108,6 +136,54 @@ function Options() {
                                     {saveStatus === 'Saved!' ? <><Check size={16} /> Saved</> : 'Save Key'}
                                 </button>
                             </div>
+                        </div>
+
+                        <div className="bg-white rounded-xl p-5 border border-[#E5E5E5] shadow-sm">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Settings size={18} className="text-[#14532d]" />
+                                <h3 className="font-semibold text-lg font-['Inter']">Advanced Settings</h3>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[#333] mb-1">
+                                        Max Selection Length (characters)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={maxSelectionLength}
+                                        onChange={(e) => setMaxSelectionLength(e.target.value)}
+                                        min="1"
+                                        max="2000"
+                                        className="w-full bg-[#F7F5F0] border border-[#E5E5E5] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[#4ade80] focus:ring-1 focus:ring-[#4ade80]"
+                                    />
+                                    <p className="text-xs text-[#737373] mt-1">
+                                        Maximum text length for AI summaries and translation (default: 500)
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleSaveSettings}
+                                    className="w-full bg-[#171717] hover:bg-[#333] text-[#FAFAFA] font-medium py-2 rounded-md transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {settingsStatus === 'Saved!' ? <><Check size={16} /> Saved</> : 'Save Settings'}
+                                </button>
+                                {settingsStatus && <p className="text-xs text-center text-[#A3A3A3]">{settingsStatus}</p>}
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-xl p-5 border border-[#E5E5E5] shadow-sm">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Trash2 size={18} className="text-red-500" />
+                                <h3 className="font-semibold text-lg font-['Inter'] text-red-600">Danger Zone</h3>
+                            </div>
+                            <p className="text-sm text-[#737373] mb-3">
+                                Permanently delete all saved words.
+                            </p>
+                            <button
+                                onClick={handleClearAllWords}
+                                className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2 rounded-md transition-colors border border-red-200"
+                            >
+                                Clear All Saved Words
+                            </button>
                         </div>
                     </div>
 

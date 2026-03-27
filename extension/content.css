@@ -42,7 +42,8 @@
     border: 1px solid var(--wl-border);
     border-radius: 8px;
     padding: 0px;
-    width: 400px;
+    width: 100%;
+    max-width: 600px;
     overflow: hidden;
     /* clips child scrollbars and rounded corner bleed */
     /* Nice soft drop shadow to lift it off the host page */
@@ -51,6 +52,10 @@
     flex-direction: column;
     gap: 10px;
     cursor: grab;
+    /* Allow card to grow with content up to max-width */
+    min-width: 300px;
+    /* Height: grow with content but never exceed viewport */
+    max-height: calc(100vh - 48px);
 }
 
 .wl-header {
@@ -154,12 +159,14 @@
 /* 3. The main content container on the right */
 .wl-content-area {
     flex: 1;
-    /* Takes up all remaining space */
+    /* Takes up all remaining space, but at least 100px for short content */
+    min-height: 100px;
     padding: 14px 18px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    overflow: hidden;
+    overflow-y: auto;
+    /* Scroll internally when content exceeds the card's max-height */
     /* clip children, prevents bleed onto card edges */
 }
 
@@ -230,6 +237,24 @@
 }
 
 .wl-speak-btn:hover {
+    color: var(--wl-text);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.wl-copy-btn {
+    background: transparent;
+    border: none;
+    color: var(--wl-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.wl-copy-btn:hover {
     color: var(--wl-text);
     background-color: rgba(255, 255, 255, 0.1);
 }
