@@ -842,17 +842,28 @@
 
             const before = text.slice(0, offset);
             const after = text.slice(offset);
-            const wordMatch = before.match(/\b(\w+)$/) || after.match(/^(\w+)/);
+            const beforeMatch = before.match(/\b(\w+)$/);
+            const afterMatch = after.match(/^(\w+)/);
 
-            if (!wordMatch) return null;
+            let word = null;
+            let start = null;
 
-            const word = wordMatch[1];
+            if (beforeMatch) {
+                word = beforeMatch[1];
+                start = offset - word.length;
+            } else if (afterMatch) {
+                word = afterMatch[1];
+                start = offset;
+            } else {
+                return null;
+            }
+
             if (word.length < 2 || word.length > 50) return null;
 
             return {
                 element: node,
-                start: offset - word.length,
-                end: offset,
+                start: start,
+                end: start + word.length,
                 word: word
             };
         } catch (e) {
@@ -864,14 +875,15 @@
         if (!wordInfo || wordInfo.underlined) return;
 
         const { element, start, word } = wordInfo;
-        const beforeText = element.splitText(start);
-        const wordNode = beforeText.splitText(word.length);
+        // Split the text node to isolate the word
+        const tail = element.splitText(start); // tail starts with the word
+        const wordNode = tail.splitText(word.length); // tail becomes the word, wordNode is remainder
 
         const span = document.createElement('span');
         span.className = 'wl-peek-word';
-        span.textContent = word;
-        beforeText.parentNode.insertBefore(span, wordNode);
-        span.appendChild(wordNode);
+        // Move the word (tail) into the span instead of duplicating
+        tail.parentNode.insertBefore(span, tail);
+        span.appendChild(tail);
 
         span.__wordlensPeek = true;
         wordInfo.element = span;
