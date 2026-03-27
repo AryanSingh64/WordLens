@@ -26,8 +26,27 @@
     // Pinned languages for translation (default)
     let pinnedLanguages = ['es', 'fr', 'ja'];
 
+    // Supported languages
+    const LANGUAGES = [
+        { code: 'es', name: 'Spanish' },
+        { code: 'fr', name: 'French' },
+        { code: 'de', name: 'German' },
+        { code: 'it', name: 'Italian' },
+        { code: 'pt', name: 'Portuguese' },
+        { code: 'ja', name: 'Japanese' },
+        { code: 'ko', name: 'Korean' },
+        { code: 'zh-CN', name: 'Chinese (Simplified)' },
+        { code: 'zh-TW', name: 'Chinese (Traditional)' },
+        { code: 'ru', name: 'Russian' },
+        { code: 'ar', name: 'Arabic' },
+        { code: 'hi', name: 'Hindi' },
+    ];
+
     // Cache for speak button text
     const speakTextMap = new Map();
+
+    // Icon for copy success feedback
+    const CHECKMARK_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 
     const IDLE_DELAY = 600; // ms for pause-to-peek
 
@@ -88,19 +107,26 @@
 
     document.addEventListener('mouseup', (e) => {
         setTimeout(() => {
+            // If we just dragged, ignore this event
+            if (wasJustDragged) return;
+
+            const clickedInsidePopup = popupEl && popupEl.contains(e.target);
             const selection = window.getSelection();
             const text = selection.toString().trim();
 
-            if (text.length > 0 && text.length < 500) {
-                const range = selection.getRangeAt(0);
-                const word = extractSelectedWord(text);
-                const context = extractSentenceContext(range);
-
-                showPopup(word, context);
-            } else if (text.length === 0) {
-                hidePopup();
+            // Only handle show/hide if click was outside the popup
+            if (!clickedInsidePopup) {
+                if (text.length > 0 && text.length < 500) {
+                    const range = selection.getRangeAt(0);
+                    const word = extractSelectedWord(text);
+                    const context = extractSentenceContext(range);
+                    showPopup(word, context);
+                } else if (text.length === 0) {
+                    hidePopup();
+                }
             }
 
+            // Always clean up underline on any mouseup
             if (currentWordElement) {
                 removeUnderline(currentWordElement);
                 currentWordElement = null;
@@ -122,6 +148,99 @@
         setupDrag();
         setupTabListeners();
         attachGlobalKeydown();
+
+        // Event delegation for dynamic content buttons (copy, speak, retry, save)
+        popupEl.addEventListener('click', (e) => {
+            const copyBtn = e.target.closest('.wl-copy-btn');
+            if (copyBtn) {
+                e.preventDefault();
+                const text = copyBtn.dataset.copyText;
+                if (!text) return;
+                navigator.clipboard.writeText(text).then(() => {
+                    const original = copyBtn.innerHTML;
+                    const originalTitle = copyBtn.title;
+                    copyBtn.innerHTML = CHECKMARK_SVG;
+                    copyBtn.title = 'Copied!';
+                    copyBtn.style.color = 'var(--wl-accent)';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = original;
+                        copyBtn.title = originalTitle;
+                        copyBtn.style.color = '';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Copy failed:', err);
+                });
+                return;
+            }
+
+            const speakBtn = e.target.closest('.wl-speak-btn');
+            if (speakBtn) {
+                e.preventDefault();
+                const text = speakBtn.dataset.text || currentWord;
+                if (text) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.9;
+                    window.speechSynthesis.speak(utterance);
+                }
+                return;
+            }
+
+            const retryBtn = e.target.closest('.wl-retry-btn');
+            if (retryBtn) {
+                e.preventDefault();
+                loadTabContent();
+                return;
+            }
+
+            const saveBtn = e.target.closest('#wl-btn-save');
+            if (saveBtn) {
+                e.preventDefault();
+                if (!currentWord) return;
+                (async () => {
+                    try {
+                        const { savedWords = [] } = await new Promise(r => chrome.storage.local.get(['savedWords'], r));
+                        const exists = savedWords.some(w => w.word.toLowerCase() === currentWord.toLowerCase());
+                        if (!exists) {
+                            savedWords.push({
+                                word: currentWord,
+                                context: currentContext || '',
+                                timestamp: Date.now()
+                            });
+                            await new Promise(r => chrome.storage.local.set({ savedWords }, r));
+                            // Visual feedback
+                            saveBtn.style.color = 'var(--wl-accent)';
+                            setTimeout(() => saveBtn.style.color = '', 2000);
+                            // Refresh vault if active
+                            if (currentTab === 'vault') {
+                                loadVaultTab();
+                            }
+                        } else {
+                            saveBtn.style.color = 'var(--wl-muted-light)';
+                            setTimeout(() => saveBtn.style.color = '', 2000);
+                        }
+                    } catch (err) {
+                        console.error('Save failed:', err);
+                    }
+                })();
+                return;
+            }
+
+            const langBtn = e.target.closest('.wl-lang-btn');
+            if (langBtn) {
+                e.preventDefault();
+                loadTranslateTab(langBtn.dataset.lang);
+                return;
+            }
+        });
+
+        // Delegated change handler for language select
+        popupEl.addEventListener('change', (e) => {
+            if (e.target && e.target.id === 'wl-translate-lang-select') {
+                loadTranslateTab(e.target.value);
+            }
+        });
     }
 
     function showPopup(word, context) {
@@ -205,7 +324,6 @@
 
         // Attach event listeners
         attachTabHandlers();
-        attachButtonHandlers();
     }
 
     function switchTab(tab) {
@@ -229,38 +347,6 @@
         });
     }
 
-    function attachButtonHandlers() {
-        const main = document.getElementById('wl-main-content');
-        if (!main) return;
-
-        main.querySelectorAll('.wl-speak-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const text = btn.dataset.text || currentWord;
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.9;
-                window.speechSynthesis.speak(utterance);
-            });
-        });
-
-        main.querySelectorAll('.wl-copy-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const text = btn.dataset.copyText;
-                try {
-                    await navigator.clipboard.writeText(text);
-                    btn.style.color = 'var(--wl-accent)';
-                    setTimeout(() => btn.style.color = '', 2000);
-                } catch (err) {
-                    console.error('Copy failed:', err);
-                }
-            });
-        });
-
-        main.querySelectorAll('.wl-retry-btn').forEach(btn => {
-            btn.addEventListener('click', loadTabContent);
-        });
-    }
 
     function loadTabContent() {
         const main = document.getElementById('wl-main-content');
@@ -409,27 +495,30 @@
         }
     }
 
-    async function loadTranslateTab() {
+    async function loadTranslateTab(selectedLang = null) {
         try {
-            const translations = [];
-            for (const lang of pinnedLanguages) {
-                if (lang === 'en') continue;
-                const result = await callBackground('TRANSLATE_TEXT', {
-                    text: currentWord,
-                    targetLang: lang
-                });
-                translations.push({
-                    code: lang,
-                    name: getLanguageName(lang),
-                    translation: result.translation
-                });
+            // If no language selected, use the first pinned language (excluding English)
+            let targetLang = selectedLang;
+            if (!targetLang) {
+                targetLang = pinnedLanguages.find(l => l !== 'en') || pinnedLanguages[0];
             }
 
+            // Fetch translation for the selected language
+            const result = await callBackground('TRANSLATE_TEXT', {
+                text: currentWord,
+                targetLang: targetLang
+            });
+
             const main = document.getElementById('wl-main-content');
+            const targetLangName = getLanguageName(targetLang);
+
             main.innerHTML = `
-                <div class="wl-header" style="align-items: center; justify-content: flex-start; gap: 8px;">
-                    <h3 class="wl-word">${escapeHTML(currentWord)}</h3>
-                    <button class="wl-icon-btn wl-copy-btn" data-copy-text="${escapeHTML(currentWord + '\n\n' + translations.map(t => t.name + ': ' + t.translation).join('\n'))}" title="Copy all" style="margin-left: auto;">
+                <div class="wl-header" style="align-items: flex-start; gap: 8px;">
+                    <div style="flex: 1;">
+                        <h3 class="wl-word">${escapeHTML(currentWord)}</h3>
+                        <div class="wl-phonetic" style="margin-top: 4px;">Translation to ${escapeHTML(targetLangName)}</div>
+                    </div>
+                    <button class="wl-icon-btn wl-copy-btn" data-copy-text="${escapeHTML(result.translation)}" title="Copy translation" style="margin-left: auto;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -437,28 +526,20 @@
                     </button>
                 </div>
 
-                <div class="wl-lang-grid">
-                    ${translations.map(t => `
-                        <div class="wl-lang-card">
-                            <div class="wl-lang-name">${escapeHTML(t.name)}</div>
-                            <div class="wl-lang-text">${escapeHTML(t.translation)}</div>
-                        </div>
-                    `).join('')}
-                </div>
+                <div class="wl-translation-result">${escapeHTML(result.translation)}</div>
 
-                <div style="margin-top: 12px; text-align: center;">
-                    <button class="wl-settings-icon" id="wl-btn-lang-settings" title="Choose languages">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"></path>
-                        </svg>
-                    </button>
+                <div style="margin-top: 12px;">
+                    <div class="wl-lang-label">Target Language:</div>
+                    <div class="wl-lang-buttons">
+                        ${LANGUAGES.filter(l => l.code !== 'en').map(lang => `
+                            <button class="wl-lang-btn ${lang.code === targetLang ? 'active' : ''}"
+                                    data-lang="${lang.code}">
+                                ${escapeHTML(lang.name)}
+                            </button>
+                        `).join('')}
+                    </div>
                 </div>
             `;
-
-            // Attach language settings button
-            document.getElementById('wl-btn-lang-settings')?.addEventListener('click', showLanguageSettings);
-
         } catch (err) {
             console.error('Translate error:', err);
             renderError('Translation failed: ' + err.message);
@@ -484,6 +565,9 @@
                 `;
                 return;
             }
+
+            // Sort by newest first (highest timestamp)
+            words.sort((a, b) => b.timestamp - a.timestamp);
 
             main.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -518,17 +602,19 @@
                 <p class="wl-vault-date">${new Date(entry.timestamp).toLocaleDateString()}</p>
                 <div class="wl-vault-actions">
                     <button class="wl-vault-btn wl-vault-lookup"
-                        data-word="${escapeHTML(entry.word)}"
-                        data-context="${escapeHTML(entry.contextSentence || '')}">Look up</button>
-                    <button class="wl-vault-btn wl-vault-delete" data-index="${index}">Delete</button>
+                        data-word="${encodeURIComponent(entry.word)}"
+                        data-context="${encodeURIComponent(entry.contextSentence || entry.meaning || '')}">Look up</button>
+                    <button class="wl-vault-btn wl-vault-delete" data-word="${encodeURIComponent(entry.word)}">Delete</button>
                 </div>
             </div>
         `).join('');
 
         list.querySelectorAll('.wl-vault-lookup').forEach(btn => {
             btn.addEventListener('click', () => {
-                currentWord = btn.dataset.word;
-                currentContext = btn.dataset.context;
+                const word = decodeURIComponent(btn.dataset.word);
+                const context = decodeURIComponent(btn.dataset.context);
+                currentWord = word;
+                currentContext = context;
                 switchTab('dictionary');
                 loadTabContent();
                 // Scroll popup into view if needed
@@ -538,10 +624,10 @@
 
         list.querySelectorAll('.wl-vault-delete').forEach(btn => {
             btn.addEventListener('click', async () => {
-                const index = parseInt(btn.dataset.index);
+                const word = decodeURIComponent(btn.dataset.word);
                 const words = await callBackground('GET_VAULT');
-                words.splice(index, 1);
-                await new Promise(r => chrome.storage.local.set({ savedWords: words }, r));
+                const filtered = words.filter(w => w.word.toLowerCase() !== word.toLowerCase());
+                await new Promise(r => chrome.storage.local.set({ savedWords: filtered }, r));
                 loadVaultTab();
             });
         });
@@ -930,20 +1016,6 @@
     }
 
     function getLanguageName(code) {
-        const LANGUAGES = [
-            { code: 'es', name: 'Spanish' },
-            { code: 'fr', name: 'French' },
-            { code: 'de', name: 'German' },
-            { code: 'it', name: 'Italian' },
-            { code: 'pt', name: 'Portuguese' },
-            { code: 'ja', name: 'Japanese' },
-            { code: 'ko', name: 'Korean' },
-            { code: 'zh-CN', name: 'Chinese (Simplified)' },
-            { code: 'zh-TW', name: 'Chinese (Traditional)' },
-            { code: 'ru', name: 'Russian' },
-            { code: 'ar', name: 'Arabic' },
-            { code: 'hi', name: 'Hindi' },
-        ];
         return LANGUAGES.find(l => l.code === code)?.name || code;
     }
 
