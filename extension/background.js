@@ -46,22 +46,6 @@ async function fetchWithRetry(url, options, maxRetries = 2) {
   }
 }
 
-// Listen for messages from content.js
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    // Helper to safely send response, handling cases where the port might be closed
-    const safeSendResponse = (response) => {
-      try {
-        sendResponse(response);
-      } catch (err) {
-        // Port closed errors are expected when popup closes before response arrives
-        if (err.message && err.message.includes('The message port closed')) {
-          // Silently ignore - the content script is gone
-          return;
-        }
-        console.error('Error sending response:', err);
-      }
-    };
-
 // Handle keyboard command to show command palette
 if (chrome.commands && chrome.commands.onCommand) {
     chrome.commands.onCommand.addListener((command) => {
@@ -75,9 +59,20 @@ if (chrome.commands && chrome.commands.onCommand) {
     });
 }
 
-// We check the "type" field to know what kind of request this is
-if (message.type === 'LOOKUP_WORD') {
-        // Call the free dictionary API
+// Listen for messages from content.js
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    const safeSendResponse = (response) => {
+      try {
+        sendResponse(response);
+      } catch (err) {
+        if (err.message && err.message.includes('The message port closed')) {
+          return;
+        }
+        console.error('Error sending response:', err);
+      }
+    };
+
+    if (message.type === 'LOOKUP_WORD') {
         lookupWord(message.word)
             .then(data => safeSendResponse({ success: true, data }))
             .catch(err => safeSendResponse({ success: false, error: err.message }));
@@ -142,42 +137,6 @@ if (message.type === 'LOOKUP_WORD') {
 
     if (message.type === 'OPEN_OPTIONS_PAGE') {
         chrome.runtime.openOptionsPage();
-        return true;
-    }
-
-    if (message.type === 'OPEN_SIDE_PANEL') {
-        const wordData = {
-            word: message.word,
-            context: message.context || '',
-            timestamp: Date.now()
-        };
-        // Store so side panel can pick up on open
-        chrome.storage.local.set({ pendingWord: wordData }, () => {
-            // Try to open the side panel in the sender's window
-            if (sender.tab?.windowId && chrome.sidePanel) {
-                chrome.sidePanel.open({ windowId: sender.tab.windowId });
-            }
-        });
-        // Also send direct message in case side panel is already open
-        chrome.runtime.sendMessage({ type: 'UPDATE_WORD', ...wordData }).catch(() => {});
-        return true;
-    }
-
-    if (message.type === 'SET_CURRENT_WORD') {
-        // Direct message to side panel if already open: forward to side panel via storage
-        chrome.storage.local.set({ currentWordData: {
-            word: message.word,
-            context: message.context || '',
-            timestamp: Date.now()
-        } });
-        // Also send a message directly to side panel if it's open
-        if (chrome.runtime.sendMessage) {
-            chrome.runtime.sendMessage({
-                type: 'UPDATE_WORD',
-                word: message.word,
-                context: message.context || ''
-            }).catch(() => {});
-        }
         return true;
     }
 });

@@ -5,8 +5,7 @@
     "description": "A quiet reading companion. Look up words, understand sentences, and read PDFs - without leaving the page.",
     "permissions": [
         "activeTab",
-        "storage",
-        "sidePanel"
+        "storage"
     ],
     "host_permissions": [
         "https://api.dictionaryapi.dev/*",
@@ -48,9 +47,6 @@
             },
             "description": "Open WordLens command palette"
         }
-    },
-    "side_panel": {
-        "default_path": "extension/sidepanel.html"
     },
     "icons": {
         "16": "icons/icon.png",
