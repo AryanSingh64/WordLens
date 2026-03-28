@@ -338,6 +338,17 @@
     color: var(--wl-muted-dark);
 }
 
+.wl-pos-definition.wl-highlight-context {
+    border-left-color: var(--wl-accent);
+    background: rgba(74, 222, 128, 0.05);
+    border-radius: 0 4px 4px 0;
+    padding: 6px 12px;
+}
+
+#wordlens-popup-root.wl-theme-dark .wl-highlight-context {
+    background: rgba(74, 222, 128, 0.1);
+}
+
 /* Definition blocks */
 .wl-definition {
     font-size: 14px;

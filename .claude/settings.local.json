@@ -15,7 +15,8 @@
       "Bash(cp -f \"/f/Github-Code/WordLens/extension/sidepanel.html\" \"/f/Github-Code/WordLens/dist/extension/sidepanel.html\")",
       "Bash(cp -f \"/f/Github-Code/WordLens/extension/popup.js\" \"/f/Github-Code/WordLens/dist/extension/popup.js\")",
       "Bash(cp:*)",
-      "Bash(cp -f \"/f/Github-Code/WordLens/public/manifest.json\" \"/f/Github-Code/WordLens/dist/manifest.json\")"
+      "Bash(cp -f \"/f/Github-Code/WordLens/public/manifest.json\" \"/f/Github-Code/WordLens/dist/manifest.json\")",
+      "Bash(ls -la *.json *.js)"
     ]
   }
 }

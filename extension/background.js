@@ -73,7 +73,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     };
 
     if (message.type === 'LOOKUP_WORD') {
-        lookupWord(message.word)
+        lookupWord(message.word, message.apiKey)
             .then(data => safeSendResponse({ success: true, data }))
             .catch(err => safeSendResponse({ success: false, error: err.message }));
         return true;
@@ -142,7 +142,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 
-async function lookupWord(word) {
+async function lookupWord(word, apiKey) {
   // Check cache first
   const cached = getCached('dict', word);
   if (cached) return cached;
@@ -152,7 +152,40 @@ async function lookupWord(word) {
   const response = await fetchWithRetry(url, {});
 
   if (!response.ok) {
-      throw new Error('Word not found');
+    if (apiKey) {
+      try {
+        const fallbackDef = await getAIFallbackDefinition(word, apiKey);
+        if (fallbackDef) {
+          setCache('dict', word, fallbackDef);
+          return fallbackDef;
+        }
+      } catch (e) {
+        console.warn('Fallback failed:', e);
+      }
+    }
+    // Try to get error details from response body for better feedback
+    try {
+      const errorBody = await response.text();
+      // Check if it's JSON with a message
+      try {
+        const errorJson = JSON.parse(errorBody);
+        if (errorJson.message) {
+          throw new Error(errorJson.message);
+        }
+        if (errorJson.title) {
+          throw new Error(errorJson.title);
+        }
+      } catch {
+        // Not JSON, continue to use status text
+      }
+      // If body is short and informative, include it
+      if (errorBody && errorBody.length < 100) {
+        throw new Error(`${response.statusText}: ${errorBody}`);
+      }
+    } catch (e) {
+      // ignore secondary errors in parsing
+    }
+    throw new Error(`Word not found (${response.status})`);
   }
 
   const json = await response.json();
@@ -476,4 +509,41 @@ async function clearVault() {
             resolve();
         });
     });
+}
+
+async function getAIFallbackDefinition(word, apiKey) {
+    const prompt = `Please provide a dictionary definition for the word or phrase "${word}". Return the response strictly as a JSON object matching this schema:
+{
+  "word": "the word",
+  "phonetic": "phonetic transcription if available, otherwise empty string",
+  "meanings": [
+    {
+      "partOfSpeech": "noun/verb/adjective/etc",
+      "definition": "definition text",
+      "example": "an example sentence using the word, or empty string"
+    }
+  ]
+}
+Do not include any other text except the JSON object.`;
+
+    const response = await fetchWithRetry('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: "llama-3.1-8b-instant",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.3,
+            response_format: { type: "json_object" }
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('AI Fallback failed');
+    }
+
+    const data = await response.json();
+    return JSON.parse(data.choices[0].message.content);
 }

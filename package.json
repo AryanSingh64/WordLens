@@ -14,6 +14,8 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.35.1",
     "lucide-react": "^0.577.0",
+    "markmap-common": "^0.18.9",
+    "markmap-view": "^0.18.12",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-pdf": "^10.4.1",

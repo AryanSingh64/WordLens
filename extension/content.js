@@ -437,54 +437,87 @@
                 return;
             }
 
-            // Get context definition
+            // Run requests in parallel avoiding single point of failure
+            const ctxPromise = currentContext 
+                ? callBackground('CONTEXT_DEFINITION', { word: currentWord, sentence: currentContext, apiKey: groqApiKey }).catch(() => null)
+                : Promise.resolve(null);
+                
+            const dictPromise = callBackground('LOOKUP_WORD', { word: currentWord, apiKey: groqApiKey }).catch(() => null);
+            const cefrPromise = callBackground('GET_CEFR_LEVEL', { word: currentWord, apiKey: groqApiKey }).catch(() => null);
+            const etyPromise = callBackground('GET_ETYMOLOGY', { word: currentWord, apiKey: groqApiKey }).catch(() => null);
+
+            const [ctxDef, dictData, cefrData, etyData] = await Promise.all([ctxPromise, dictPromise, cefrPromise, etyPromise]);
+
+            if (!ctxDef && !dictData && !cefrData && !etyData) {
+                renderError('No definition found for this word. Try a different word or translation.');
+                return;
+            }
+
             let contextDefHtml = '';
-            if (currentContext) {
-                const ctxDef = await callBackground('CONTEXT_DEFINITION', {
-                    word: currentWord,
-                    sentence: currentContext,
-                    apiKey: groqApiKey
-                });
+            if (ctxDef && ctxDef.definition) {
                 contextDefHtml = `
-                    <div class="wl-pos-definition">
-                        <div class="wl-pos-label">In this context</div>
+                    <div class="wl-pos-definition wl-highlight-context">
+                        <div class="wl-pos-label">In Context</div>
                         <p class="wl-definition">${escapeHTML(ctxDef.definition)}</p>
                     </div>
                 `;
             }
 
-            // Get dictionary definition
-            const dictData = await callBackground('LOOKUP_WORD', { word: currentWord });
-            const generalDefHtml = dictData.meanings.map(m => `
-                <div class="wl-pos-definition pos-${m.partOfSpeech}">
-                    <div class="wl-pos-label">${m.partOfSpeech}</div>
-                    <p class="wl-definition">${escapeHTML(m.definition)}</p>
-                    ${m.example ? `<p class="wl-example">"${escapeHTML(m.example)}"</p>` : ''}
-                </div>
-            `).join('');
+            let generalDefHtml = '';
+            let wordHeader = currentWord;
+            let phoneticHtml = '';
+            let audioHtml = '';
+            let copyText = currentWord;
 
-            // CEFR level
-            const cefrData = await callBackground('GET_CEFR_LEVEL', { word: currentWord, apiKey: groqApiKey });
-            const cefrBadge = `<span class="wl-cefr-badge" style="background: ${getCEFRColor(cefrData.level)}; color: ${getCEFRTextColor(cefrData.level)};">${cefrData.level}</span>`;
-
-            // Etymology
-            const etyData = await callBackground('GET_ETYMOLOGY', { word: currentWord, apiKey: groqApiKey });
-
-            const main = document.getElementById('wl-main-content');
-            main.innerHTML = `
-                <div class="wl-header" style="align-items: center; justify-content: flex-start; gap: 8px;">
-                    <div class="wl-word-title-row">
-                        <h3 class="wl-word">${escapeHTML(dictData.word)}</h3>
-                        ${cefrBadge}
+            if (dictData) {
+                generalDefHtml = dictData.meanings.map(m => `
+                    <div class="wl-pos-definition pos-${m.partOfSpeech}">
+                        <div class="wl-pos-label">${m.partOfSpeech}</div>
+                        <p class="wl-definition">${escapeHTML(m.definition)}</p>
+                        ${m.example ? `<p class="wl-example">"${escapeHTML(m.example)}"</p>` : ''}
                     </div>
+                `).join('');
+                wordHeader = dictData.word || currentWord;
+                if (dictData.phonetic) phoneticHtml = `<span class="wl-phonetic">${escapeHTML(dictData.phonetic)}</span>`;
+                copyText = formatFullText(dictData);
+                audioHtml = `
                     <button class="wl-icon-btn wl-speak-btn" data-text="${escapeHTML(dictData.word)}" title="Pronounce">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                         </svg>
                     </button>
-                    ${dictData.phonetic ? `<span class="wl-phonetic">${escapeHTML(dictData.phonetic)}</span>` : ''}
-                    <button class="wl-icon-btn wl-copy-btn" data-copy-text="${escapeHTML(formatFullText(dictData))}" title="Copy" style="margin-left: auto;">
+                `;
+            } else {
+                audioHtml = `
+                    <button class="wl-icon-btn wl-speak-btn" data-text="${escapeHTML(currentWord)}" title="Pronounce">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        </svg>
+                    </button>
+                `;
+            }
+
+            let cefrBadge = '';
+            if (cefrData && cefrData.level) {
+                cefrBadge = `<span class="wl-cefr-badge" style="background: ${getCEFRColor(cefrData.level)}; color: ${getCEFRTextColor(cefrData.level)};">${cefrData.level}</span>`;
+            }
+
+            const main = document.getElementById('wl-main-content');
+            if (!main) {
+                console.warn('Main content element missing, aborting loadDictionaryTab');
+                return;
+            }
+            main.innerHTML = `
+                <div class="wl-header" style="align-items: center; justify-content: flex-start; gap: 8px;">
+                    <div class="wl-word-title-row">
+                        <h3 class="wl-word">${escapeHTML(wordHeader)}</h3>
+                        ${cefrBadge}
+                    </div>
+                    ${audioHtml}
+                    ${phoneticHtml}
+                    <button class="wl-icon-btn wl-copy-btn" data-copy-text="${escapeHTML(copyText)}" title="Copy" style="margin-left: auto;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -495,10 +528,10 @@
                 ${contextDefHtml}
 
                 <div style="margin-top: 8px;">
-                    ${generalDefHtml}
+                    ${generalDefHtml || (ctxDef ? '' : '<p class="wl-definition">No standard dictionary definition found.</p>')}
                 </div>
 
-                ${etyData.etymology ? `
+                ${etyData && etyData.etymology ? `
                     <div class="wl-etymology">
                         <em>${escapeHTML(etyData.etymology)}</em>
                     </div>
@@ -513,28 +546,30 @@
 
     async function loadTranslateTab(selectedLang = null) {
         try {
-            // If no language selected, use the first pinned language (excluding English)
             let targetLang = selectedLang;
             if (!targetLang) {
-                targetLang = pinnedLanguages.find(l => l !== 'en') || pinnedLanguages[0];
+                targetLang = pinnedLanguages.find(l => l !== 'en') || pinnedLanguages[0] || 'es';
             }
 
-            // Fetch translation for the selected language
             const result = await callBackground('TRANSLATE_TEXT', {
                 text: currentWord,
                 targetLang: targetLang
             });
 
             const main = document.getElementById('wl-main-content');
+            if (!main) {
+                console.warn('Main content element missing, aborting loadTranslateTab');
+                return;
+            }
             const targetLangName = getLanguageName(targetLang);
 
             main.innerHTML = `
                 <div class="wl-header" style="align-items: flex-start; gap: 8px;">
                     <div style="flex: 1;">
                         <h3 class="wl-word">${escapeHTML(currentWord)}</h3>
-                        <div class="wl-phonetic" style="margin-top: 4px;">Translation to ${escapeHTML(targetLangName)}</div>
+                        <div class="wl-phonetic" style="margin-top: 6px; font-weight: 500; font-size: 11px;">Translate to <span style="color:var(--wl-primary)">${escapeHTML(targetLangName)}</span></div>
                     </div>
-                    <button class="wl-icon-btn wl-copy-btn" data-copy-text="${escapeHTML(result.translation)}" title="Copy translation" style="margin-left: auto;">
+                    <button class="wl-icon-btn wl-copy-btn" data-copy-text="${escapeHTML(result.translation)}" title="Copy translation" style="margin-left: auto; margin-top: 2px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -542,11 +577,11 @@
                     </button>
                 </div>
 
-                <div class="wl-translation-result">${escapeHTML(result.translation)}</div>
+                <div class="wl-translation-result" style="margin-top: 12px; font-size: 15px; line-height: 1.5; color: var(--wl-text); background: var(--wl-bg-secondary); padding: 12px; border-radius: 8px; border-left: 3px solid var(--wl-primary);">${escapeHTML(result.translation)}</div>
 
-                <div style="margin-top: 12px;">
-                    <div class="wl-lang-label">Target Language:</div>
-                    <div class="wl-lang-buttons">
+                <div style="margin-top: 20px;">
+                    <div class="wl-lang-label" style="margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Switch Language</div>
+                    <div class="wl-lang-buttons" style="display: flex; flex-wrap: wrap; gap: 6px;">
                         ${LANGUAGES.filter(l => l.code !== 'en').map((lang, idx) => {
                             const isActive = lang.code === targetLang;
                             const color = PASTEL_COLORS[idx % PASTEL_COLORS.length];
@@ -566,11 +601,21 @@
     }
 
     async function loadVaultTab() {
-        const main = document.getElementById('wl-main-content');
+        let main = document.getElementById('wl-main-content');
+        if (!main) {
+            console.warn('Main content element missing, aborting loadVaultTab');
+            return;
+        }
         main.innerHTML = '<div class="wl-skeleton-pulse" style="height: 60px; margin-bottom: 8px;"></div>';
 
         try {
             const words = await callBackground('GET_VAULT');
+            // Re-check main after async operation
+            main = document.getElementById('wl-main-content');
+            if (!main) {
+                console.warn('Main content element missing after vault load, aborting');
+                return;
+            }
 
             if (words.length === 0) {
                 main.innerHTML = `
@@ -610,14 +655,20 @@
             renderVaultList(words);
 
             document.getElementById('wl-vault-clear').addEventListener('click', async () => {
-                if (confirm('Delete all saved words?')) {
-                    await callBackground('CLEAR_VAULT');
-                    loadVaultTab();
+                try {
+                    if (confirm('Delete all saved words?')) {
+                        await callBackground('CLEAR_VAULT');
+                        loadVaultTab();
+                    }
+                } catch (err) {
+                    console.error('Failed to clear vault:', err);
+                    renderError('Failed to clear vault');
                 }
             });
 
         } catch (err) {
-            main.innerHTML = renderError('Failed to load vault');
+            console.error('Vault load error:', err);
+            renderError('Failed to load vault');
         }
     }
 
@@ -662,11 +713,16 @@
 
         list.querySelectorAll('.wl-vault-delete').forEach(btn => {
             btn.addEventListener('click', async () => {
-                const word = decodeURIComponent(btn.dataset.word);
-                const words = await callBackground('GET_VAULT');
-                const filtered = words.filter(w => w.word.toLowerCase() !== word.toLowerCase());
-                await new Promise(r => chrome.storage.local.set({ savedWords: filtered }, r));
-                loadVaultTab();
+                try {
+                    const word = decodeURIComponent(btn.dataset.word);
+                    const words = await callBackground('GET_VAULT');
+                    const filtered = words.filter(w => w.word.toLowerCase() !== word.toLowerCase());
+                    await new Promise(r => chrome.storage.local.set({ savedWords: filtered }, r));
+                    loadVaultTab();
+                } catch (err) {
+                    console.error('Failed to delete word:', err);
+                    renderError('Failed to delete word');
+                }
             });
         });
     }
@@ -971,7 +1027,22 @@
 
     function getWordElementAtPoint(x, y) {
         try {
-            const range = document.caretRangeFromPoint(x, y);
+            // Try standard method (Chrome, Safari, Edge)
+            let range = null;
+            if (typeof document.caretRangeFromPoint === 'function') {
+                range = document.caretRangeFromPoint(x, y);
+            }
+
+            // Fallback for Firefox and other browsers
+            if (!range && typeof document.caretPositionFromPoint === 'function') {
+                const pos = document.caretPositionFromPoint(x, y);
+                if (pos && pos.offsetNode && pos.offsetNode.nodeType === Node.TEXT_NODE) {
+                    range = document.createRange();
+                    range.setStart(pos.offsetNode, pos.offset);
+                    range.setEnd(pos.offsetNode, pos.offset);
+                }
+            }
+
             if (!range) return null;
 
             const node = range.startContainer;
@@ -982,8 +1053,11 @@
 
             const before = text.slice(0, offset);
             const after = text.slice(offset);
-            const beforeMatch = before.match(/\b(\w+)$/);
-            const afterMatch = after.match(/^(\w+)/);
+
+            // Improved regex to support unicode letters (including accented, CJK, etc.)
+            // \p{L} matches any unicode letter, \p{N} matches numbers
+            const beforeMatch = before.match(/([\p{L}\p{N}]+(?:\-[\p{L}\p{N}]+)*)$/u);
+            const afterMatch = after.match(/^([\p{L}\p{N}]+(?:\-[\p{L}\p{N}]+)*)/u);
 
             let word = null;
             let start = null;
@@ -1041,7 +1115,12 @@
     }
 
     function extractSelectedWord(text) {
-        return text.trim().split(/\s+/)[0];
+        // Trim and extract the first word/phrase (support unicode)
+        const trimmed = text.trim();
+        if (!trimmed) return '';
+        // Match unicode words, hyphenated words, and common punctuation
+        const match = trimmed.match(/^([\p{L}\p{N}\-']+(?:\s+[\p{L}\p{N}\-']+)*)/u);
+        return match ? match[1] : trimmed.split(/\s+/)[0];
     }
 
     function extractSentenceContext(range) {

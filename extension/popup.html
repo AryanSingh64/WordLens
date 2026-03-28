@@ -6,36 +6,80 @@
     <title>WordLens — Vault</title>
     <link rel="stylesheet" href="popup.css">
     <style>
-        /* Popup-specific styles */
+        @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital,wght@0,400;0,500;1,400&display=swap');
+        
+        /* Glassmorphism Popup Styles */
         body {
-            width: 360px;
-            min-height: 400px;
+            width: 380px;
+            min-height: 450px;
             margin: 0;
             padding: 0;
             font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #eaefe8 0%, #f6f5ec 100%);
+            color: #1a1a1a;
+            position: relative;
+        }
+
+        /* Ambient background orb effect to enhance glass look */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(74, 222, 128, 0.2);
+            filter: blur(60px);
+            border-radius: 50%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 180, 216, 0.15);
+            filter: blur(60px);
+            border-radius: 50%;
+            z-index: -1;
+            pointer-events: none;
         }
 
         .wl-popup-header {
-            padding: 20px;
-            background: linear-gradient(135deg, #f7f5f0 0%, #f0ede5 100%);
-            border-bottom: 1px solid rgba(0,0,0,0.08);
+            padding: 16px 20px;
+            background: rgba(255, 252, 247, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .wl-popup-title {
             margin: 0;
             font-family: 'Instrument Serif', serif;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 500;
             font-style: italic;
             color: #1a1a1a;
+            line-height: 1.1;
         }
 
         .wl-popup-subtitle {
-            margin: 4px 0 0;
-            font-size: 12px;
+            margin: 2px 0 0;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             color: #6b6b6b;
         }
 
@@ -45,151 +89,168 @@
         }
 
         .wl-popup-action-btn {
-            background: rgba(74, 222, 128, 0.1);
-            border: 1px solid rgba(74, 222, 128, 0.3);
-            color: #16a34a;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            color: #333;
             padding: 6px 12px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .wl-popup-action-btn:hover {
-            background: rgba(74, 222, 128, 0.2);
-            border-color: #4ade80;
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .wl-popup-action-btn.primary {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: rgba(74, 222, 128, 0.3);
+            color: #14532d;
+        }
+
+        .wl-popup-action-btn.primary:hover {
+            background: rgba(74, 222, 128, 0.25);
+            border-color: rgba(74, 222, 128, 0.4);
         }
 
         .wl-popup-clear {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.3);
-            color: #dc2626;
+            background: rgba(239, 68, 68, 0.1) !important;
+            border-color: rgba(239, 68, 68, 0.2) !important;
+            color: #dc2626 !important;
+            border-radius: 12px !important;
+            padding: 10px !important;
+            font-size: 13px !important;
         }
 
         .wl-popup-clear:hover {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.15) !important;
+            border-color: rgba(239, 68, 68, 0.3) !important;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1) !important;
         }
 
         .wl-popup-content {
-            padding: 16px;
-            max-height: 500px;
+            padding: 16px 20px;
+            max-height: calc(100vh - 70px);
             overflow-y: auto;
         }
 
+        /* Custom scrollbar for glass look */
+        .wl-popup-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .wl-popup-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .wl-popup-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+        }
+        .wl-popup-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25);
+        }
+
         .wl-vault-item {
-            background: rgba(0,0,0,0.03);
-            border: 1px solid rgba(0,0,0,0.08);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            position: relative;
+            overflow: hidden;
         }
 
         .wl-vault-item:hover {
-            background: rgba(74, 222, 128, 0.05);
-            border-color: rgba(74, 222, 128, 0.3);
+            background: rgba(255, 255, 255, 0.75);
+            border-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+            transform: translateY(-2px);
+        }
+
+        /* Subtle left border accent on hover */
+        .wl-vault-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--wl-accent, #4ade80);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .wl-vault-item:hover::before {
+            opacity: 1;
         }
 
         .wl-vault-word {
-            margin: 0 0 4px;
-            font-size: 15px;
+            margin: 0 0 6px;
+            font-size: 16px;
             font-weight: 600;
             color: #1a1a1a;
+            font-family: 'DM Sans', sans-serif;
+            letter-spacing: -0.02em;
         }
 
         .wl-vault-context {
             margin: 0;
             font-size: 13px;
-            color: #6b6b6b;
-            line-height: 1.4;
+            color: #555;
+            line-height: 1.5;
         }
 
         .wl-vault-date {
-            margin: 6px 0 0;
+            margin: 8px 0 0;
             font-size: 11px;
-            color: #9ca3af;
-        }
-
-        .wl-vault-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .wl-vault-btn-sm {
-            font-size: 11px;
-            padding: 4px 10px;
-            border-radius: 4px;
-            border: 1px solid rgba(0,0,0,0.1);
-            background: transparent;
-            color: #6b6b6b;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .wl-vault-btn-sm:hover {
-            border-color: #4ade80;
-            color: #16a34a;
+            font-weight: 500;
+            font-family: 'Geist Mono', monospace;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .wl-vault-empty {
             text-align: center;
             padding: 60px 20px;
-            color: #9ca3af;
+            color: #888;
         }
 
         .wl-vault-empty-icon {
             font-size: 48px;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
             opacity: 0.5;
+            filter: grayscale(1);
         }
 
         .wl-vault-empty-text {
-            font-size: 14px;
-        }
-
-        .wl-divider {
-            border: none;
-            border-top: 1px solid rgba(0,0,0,0.08);
-            margin: 16px 0;
-        }
-
-        .wl-popup-footer {
-            padding: 12px 16px;
-            background: #f7f5f0;
-            border-top: 1px solid rgba(0,0,0,0.08);
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .wl-footer-link {
-            background: none;
-            border: none;
-            color: #6b6b6b;
-            font-size: 13px;
-            cursor: pointer;
-            text-decoration: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-
-        .wl-footer-link:hover {
-            background: rgba(0,0,0,0.05);
-            color: #1a1a1a;
+            font-size: 15px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
         }
 
         .wl-error-banner {
             background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(239, 68, 68, 0.2);
             color: #dc2626;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 14px;
+            border-radius: 12px;
             margin-bottom: 12px;
             font-size: 13px;
+            font-weight: 500;
         }
 
         .wl-loading {
@@ -198,20 +259,23 @@
             color: #6b6b6b;
         }
 
-        /* Skeleton loading */
+        /* Glassy Skeleton loading */
         .wl-skeleton {
-            background: linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 100%);
+            background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.3) 100%);
             background-size: 200% 100%;
-            animation: wl-skeleton-pulse 1.5s infinite ease-in-out;
-            border-radius: 4px;
-            height: 40px;
-            margin-bottom: 10px;
+            animation: wl-skeleton-pulse 2s infinite ease-in-out;
+            border-radius: 12px;
+            height: 90px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,255,255,0.4);
+            backdrop-filter: blur(8px);
         }
 
         @keyframes wl-skeleton-pulse {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
+        
     </style>
 </head>
 <body>
@@ -221,7 +285,13 @@
             <p class="wl-popup-subtitle">Vocabulary vault</p>
         </div>
         <div class="wl-popup-actions">
-            <button class="wl-popup-action-btn" id="wl-btn-settings">Settings</button>
+            <button class="wl-popup-action-btn primary" id="wl-link-pdf">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                PDF
+            </button>
+            <button class="wl-popup-action-btn" id="wl-btn-settings">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
         </div>
     </div>
 
@@ -231,11 +301,6 @@
             <div class="wl-skeleton"></div>
             <div class="wl-skeleton"></div>
         </div>
-    </div>
-
-    <div class="wl-popup-footer">
-        <button class="wl-footer-link" id="wl-link-open-sidepanel">Open Side Panel</button>
-        <button class="wl-footer-link" id="wl-link-pdf">PDF Reader</button>
     </div>
 
     <script src="popup.js"></script>

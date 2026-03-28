@@ -226,7 +226,7 @@ async function loadDictionaryTab() {
         }
 
         // Get dictionary definition (fallback)
-        const dictData = await callBackground('LOOKUP_WORD', { word: currentWord });
+        const dictData = await callBackground('LOOKUP_WORD', { word: currentWord, apiKey: groqApiKey });
         const generalDefHtml = dictData.meanings.map(m => `
             <div class="wl-pos-definition pos-${m.partOfSpeech}">
                 <div class="wl-pos-label">${m.partOfSpeech}</div>

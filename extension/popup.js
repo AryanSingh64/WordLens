@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const contentEl = document.getElementById('wl-vault-content');
     const btnSettings = document.getElementById('wl-btn-settings');
     const btnClearAll = document.getElementById('wl-btn-clear-all'); // We'll add dynamically
-    const linkOpenSidepanel = document.getElementById('wl-link-open-sidepanel');
     const linkPdf = document.getElementById('wl-link-pdf');
 
     // Load vault items
@@ -16,15 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Settings button -> open options page
     btnSettings.addEventListener('click', () => {
         chrome.runtime.openOptionsPage();
-    });
-
-    // Open side panel (Chrome API)
-    linkOpenSidepanel.addEventListener('click', async () => {
-        if (chrome.sidePanel) {
-            await chrome.sidePanel.open({ windowId: (await chrome.windows.getCurrent()).id });
-        } else {
-            alert('Side panel not available in this Chrome version.');
-        }
     });
 
     // Open PDF reader
