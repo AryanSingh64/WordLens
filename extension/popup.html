@@ -21,121 +21,332 @@
             overflow: hidden;
         }
 
-        /* Ambient background orb effect to enhance glass look */
-        body::before {
-            content: '';
-            position: absolute;
-            top: -50px;
-            left: -50px;
-            width: 200px;
-            height: 200px;
-            background: rgba(74, 222, 128, 0.35);
-            filter: blur(60px);
-            border-radius: 50%;
-            z-index: -1;
-            pointer-events: none;
+        /* Dark mode support */
+        body.wl-theme-dark {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #f0f0f0;
         }
-        
-        body::after {
-            content: '';
-            position: absolute;
-            bottom: -50px;
-            right: -50px;
-            width: 200px;
-            height: 200px;
-            background: rgba(0, 180, 216, 0.25);
-            filter: blur(60px);
-            border-radius: 50%;
-            z-index: -1;
-            pointer-events: none;
+
+        body.wl-theme-dark .wl-popup-header {
+            background: rgba(30, 30, 30, 0.4);
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        body.wl-theme-dark .wl-popup-title {
+            color: #f0f0f0;
+        }
+
+        body.wl-theme-dark .wl-popup-subtitle {
+            color: #a0a0a0;
+        }
+
+        body.wl-theme-dark .wl-popup-action-btn {
+            background: rgba(50, 50, 50, 0.45);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: #e0e0e0;
+            box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        body.wl-theme-dark .wl-popup-action-btn:hover {
+            background: rgba(60, 60, 60, 0.75);
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow:
+                0 8px 20px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        body.wl-theme-dark .wl-popup-action-btn.primary {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: rgba(74, 222, 128, 0.4);
+            color: #22c55e;
+            box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(74, 222, 128, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        body.wl-theme-dark .wl-popup-action-btn.primary:hover {
+            background: rgba(74, 222, 128, 0.3);
+            border-color: rgba(74, 222, 128, 0.6);
+            box-shadow:
+                0 8px 24px rgba(74, 222, 128, 0.25),
+                0 0 0 1px rgba(74, 222, 128, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        body.wl-theme-dark .wl-vault-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        body.wl-theme-dark .wl-vault-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(74, 222, 128, 0.5);
+            box-shadow: 0 8px 24px rgba(74, 222, 128, 0.15);
+        }
+
+        body.wl-theme-dark .wl-vault-word {
+            color: #f0f0f0;
+        }
+
+        body.wl-theme-dark .wl-vault-context {
+            color: #b0b0b0;
+        }
+
+        body.wl-theme-dark .wl-vault-date {
+            color: #999;
+        }
+
+        body.wl-theme-dark .wl-error-banner {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        /* Ambient background orbs for dark mode */
+        body.wl-theme-dark::before {
+            background: rgba(74, 222, 128, 0.2);
+        }
+
+        body.wl-theme-dark::after {
+            background: rgba(0, 180, 216, 0.15);
+        }
+
+        /* Scrollbar for dark mode */
+        body.wl-theme-dark .wl-popup-content::-webkit-scrollbar-thumb {
+            background: rgba(74, 222, 128, 0.4);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                0 2px 8px rgba(74, 222, 128, 0.25);
+        }
+
+        body.wl-theme-dark .wl-popup-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(74, 222, 128, 0.6);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 4px 12px rgba(74, 222, 128, 0.35);
+        }
+
+        body.wl-theme-dark .wl-popup-content {
+            scrollbar-color: rgba(74, 222, 128, 0.4) rgba(255, 255, 255, 0.05);
         }
 
         .wl-popup-header {
-            padding: 16px 20px;
-            background: rgba(255, 252, 247, 0.35);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            padding: 18px 20px;
+            background: rgba(255, 252, 247, 0.4);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
             display: flex;
             justify-content: space-between;
             align-items: center;
             position: sticky;
             top: 0;
             z-index: 10;
+            min-height: 64px;
         }
 
         .wl-popup-title {
             margin: 0;
             font-family: 'Instrument Serif', serif;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 500;
             font-style: italic;
             color: #1a1a1a;
-            line-height: 1.1;
+            line-height: 1.2;
         }
 
         .wl-popup-subtitle {
-            margin: 2px 0 0;
+            margin: 3px 0 0;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6b6b6b;
+            letter-spacing: 0.08em;
+            color: #666;
+            opacity: 0.8;
         }
 
         .wl-popup-actions {
             display: flex;
-            gap: 8px;
+            gap: 10px;
+            align-items: center;
         }
 
         .wl-popup-action-btn {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(16px) saturate(150%);
+            -webkit-backdrop-filter: blur(16px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             color: #333;
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 8px 14px;
+            border-radius: 12px;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
             display: flex;
             align-items: center;
             gap: 6px;
+            height: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Shimmer effect on hover */
+        .wl-popup-action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: left 0.5s ease;
+        }
+
+        .wl-popup-action-btn:hover::before {
+            left: 100%;
         }
 
         .wl-popup-action-btn:hover {
-            background: rgba(255, 255, 255, 0.8);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            background: rgba(255, 255, 255, 0.75);
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 20px rgba(0, 0, 0, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.9);
         }
 
         .wl-popup-action-btn.primary {
-            background: rgba(74, 222, 128, 0.15);
-            border-color: rgba(74, 222, 128, 0.3);
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.3);
             color: #14532d;
+            box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.04),
+                0 0 0 1px rgba(34, 197, 94, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         .wl-popup-action-btn.primary:hover {
-            background: rgba(74, 222, 128, 0.25);
-            border-color: rgba(74, 222, 128, 0.4);
+            background: rgba(34, 197, 94, 0.25);
+            border-color: rgba(34, 197, 94, 0.5);
+            box-shadow:
+                0 8px 24px rgba(34, 197, 94, 0.2),
+                0 0 0 1px rgba(34, 197, 94, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
 
         .wl-popup-clear {
-            background: rgba(239, 68, 68, 0.1) !important;
-            border-color: rgba(239, 68, 68, 0.2) !important;
+            background: rgba(239, 68, 68, 0.12) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-color: rgba(239, 68, 68, 0.25) !important;
             color: #dc2626 !important;
             border-radius: 12px !important;
             padding: 10px !important;
             font-size: 13px !important;
+            box-shadow:
+                0 4px 12px rgba(239, 68, 68, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease !important;
         }
 
         .wl-popup-clear:hover {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border-color: rgba(239, 68, 68, 0.4) !important;
+            box-shadow:
+                0 6px 16px rgba(239, 68, 68, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        /* Vault item button styles for alignment */
+        .wl-vault-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .wl-vault-header,
+        .wl-vault-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .wl-vault-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-top: 2px;
+        }
+
+        .wl-vault-btn {
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: transparent;
+            border: 1px solid var(--wl-glass-border-light);
+            color: var(--wl-muted-light);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 50px;
+        }
+
+        .wl-vault-btn:hover {
+            background: var(--wl-accent-light);
+            color: var(--wl-accent);
+            border-color: var(--wl-accent);
+        }
+
+        body.wl-theme-dark .wl-vault-btn {
+            border-color: var(--wl-glass-border-dark);
+        }
+
+        body.wl-theme-dark .wl-vault-btn:hover {
+            background: rgba(74, 222, 128, 0.15);
+            color: #22c55e;
+            border-color: #22c55e;
+        }
+
+        body.wl-theme-dark .wl-popup-clear {
             background: rgba(239, 68, 68, 0.15) !important;
             border-color: rgba(239, 68, 68, 0.3) !important;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1) !important;
+            box-shadow:
+                0 4px 12px rgba(239, 68, 68, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        body.wl-theme-dark .wl-popup-clear:hover {
+            background: rgba(239, 68, 68, 0.25) !important;
+            border-color: rgba(239, 68, 68, 0.45) !important;
+            box-shadow:
+                0 6px 16px rgba(239, 68, 68, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
         .wl-popup-content {
@@ -146,40 +357,78 @@
             z-index: 1;
         }
 
-        /* Custom scrollbar for glass look */
+        /* Liquid glass scrollbar - WebKit */
         .wl-popup-content::-webkit-scrollbar {
             width: 6px;
         }
         .wl-popup-content::-webkit-scrollbar-track {
             background: transparent;
+            border-radius: 3px;
         }
         .wl-popup-content::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.15);
-            border-radius: 4px;
+            background: rgba(34, 197, 94, 0.3);
+            border-radius: 3px;
+            border: 1px solid transparent;
+            background-clip: padding-box;
+            transition: all 0.2s ease;
         }
         .wl-popup-content::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 0, 0, 0.25);
+            background: rgba(34, 197, 94, 0.5);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Firefox scrollbar */
+        .wl-popup-content {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(34, 197, 94, 0.3) transparent;
         }
 
         .wl-vault-item {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(16px) saturate(150%);
+            -webkit-backdrop-filter: blur(16px) saturate(150%);
             border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 12px;
-            padding: 14px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            padding: 16px;
             margin-bottom: 12px;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
             position: relative;
             overflow: hidden;
         }
 
+        .wl-vault-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.15),
+                transparent
+            );
+            transition: left 0.6s ease;
+            pointer-events: none;
+        }
+
+        .wl-vault-item:hover::after {
+            left: 100%;
+        }
+
         .wl-vault-item:hover {
-            background: rgba(255, 255, 255, 0.4);
-            border-color: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.05);
-            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.45);
+            border-color: rgba(255, 255, 255, 0.9);
+            border-top-color: rgba(74, 222, 128, 0.6);
+            box-shadow:
+                0 8px 24px rgba(74, 222, 128, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            transform: translateY(-3px);
         }
 
         /* Subtle left border accent on hover */
@@ -190,12 +439,40 @@
             top: 0;
             bottom: 0;
             width: 3px;
-            background: var(--wl-accent, #4ade80);
+            background: linear-gradient(to bottom, var(--wl-accent, #22c55e), #00b4d8);
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.3s ease;
+            border-radius: 4px 0 0 4px;
         }
         .wl-vault-item:hover::before {
             opacity: 1;
+        }
+
+        body.wl-theme-dark .wl-vault-item {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.12);
+            border-top-color: rgba(255, 255, 255, 0.1);
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        body.wl-theme-dark .wl-vault-item::after {
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.08),
+                transparent
+            );
+        }
+
+        body.wl-theme-dark .wl-vault-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(74, 222, 128, 0.4);
+            border-top-color: rgba(74, 222, 128, 0.6);
+            box-shadow:
+                0 8px 24px rgba(74, 222, 128, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
         }
 
         .wl-vault-word {

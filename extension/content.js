@@ -598,7 +598,15 @@
                     </button>
                 </div>
 
-                <div class="wl-translation-result" style="margin-top: 12px; font-size: 15px; line-height: 1.5; color: var(--wl-text); background: var(--wl-bg-secondary); padding: 12px; border-radius: 8px; border-left: 3px solid var(--wl-primary);">${escapeHTML(result.translation)}</div>
+                <div class="wl-translation-result" style="margin-top: 12px; font-size: 15px; line-height: 1.5; color: var(--wl-text); background: var(--wl-bg-secondary); padding: 12px; border-radius: 8px; border-left: 3px solid var(--wl-primary); display: flex; align-items: flex-start; gap: 10px;">
+                    <button class="wl-icon-btn wl-speak-translate-btn" title="Listen to translation" style="flex-shrink: 0; padding: 6px; width: 32px; height: 32px; min-height: 32px; min-width: 32px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        </svg>
+                    </button>
+                    <div style="flex: 1; padding-top: 4px;">${escapeHTML(result.translation)}</div>
+                </div>
 
                 <div style="margin-top: 20px;">
                     <div class="wl-lang-label" style="margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Switch Language</div>
@@ -606,15 +614,26 @@
                         ${LANGUAGES.filter(l => l.code !== 'en').map((lang, idx) => {
                             const isActive = lang.code === targetLang;
                             const color = PASTEL_COLORS[idx % PASTEL_COLORS.length];
+                            // Black text for visibility on all pastel pills
                             return `<button class="wl-lang-btn ${isActive ? 'active' : ''}"
                                     data-lang="${lang.code}"
-                                    ${!isActive ? `style="background-color: ${color};"` : ''}>
+                                    ${!isActive ? `style="background-color: ${color}; color: #000;"` : ''}>
                                     ${escapeHTML(lang.name)}
                                 </button>`;
                         }).join('')}
                     </div>
                 </div>
             `;
+
+            const speakBtn = main.querySelector('.wl-speak-translate-btn');
+            if (speakBtn) {
+                speakBtn.addEventListener('click', () => {
+                    const utterance = new SpeechSynthesisUtterance(result.translation);
+                    utterance.lang = targetLang;
+                    window.speechSynthesis.speak(utterance);
+                });
+            }
+
         } catch (err) {
             console.error('Translate error:', err);
             renderError('Translation failed: ' + err.message);

@@ -16,39 +16,88 @@
 
 @layer base {
   :root {
-    /* LIGHT MODE COLORS */
-    --bg: #F7F5F0;
-    /* Warm off-white */
-    --surface: #FFFFFF;
-    /* White card background */
-    --border: #DBCFBB;
-    /* Visible grey/beige border */
-    --text: #1A1714;
+    /* LIGHT MODE - Liquid Glass Theme */
+    --bg: linear-gradient(135deg, #eaefe8 0%, #f6f5ec 100%);
+    /* Soft natural gradient background */
+    --surface: rgba(255, 255, 255, 0.25);
+    /* Glass base with transparency */
+    --border: rgba(255, 255, 255, 0.4);
+    /* Soft glass edge */
+    --text: #1a1a1a;
     /* Near black text */
-    --muted: #8A8278;
+    --muted: #6b6b6b;
     /* Subtle text */
-    --accent: #2D5016;
-    /* Deep green */
-    --accent-light: #EAF0E4;
-    /* Light green hover bg */
+    --accent: #22c55e;
+    /* Vibrant liquid green */
+    --accent-light: rgba(234, 240, 228, 0.6);
+    /* Light green glass for hover */
+    --glass-blur: blur(24px) saturate(180%);
+    /* Enhanced glass effect */
+    --shadow-color: rgba(74, 222, 128, 0.15);
+    /* Soft green glow */
+    --foreground: var(--text); /* For arrow animation */
   }
 
   .dark {
-    /* DARK MODE COLORS */
-    --bg: #0A0A0A;
-    /* Deep black background */
-    --surface: #171717;
-    /* Dark grey card background */
-    --border: #333333;
-    /* Grey border */
-    --text: #FAFAFA;
+    /* DARK MODE - Liquid Glass Theme */
+    --bg: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    /* Deep dark gradient */
+    --surface: rgba(30, 30, 30, 0.25);
+    /* Dark glass base */
+    --border: rgba(255, 255, 255, 0.1);
+    /* Subtle glass edge */
+    --text: #f0f0f0;
     /* White text */
-    --muted: #A3A3A3;
+    --muted: #a0a0a0;
     /* Subtle text */
     --accent: #4ade80;
     /* Vibrant green */
-    --accent-light: #14532d;
-    /* Dark green hover */
+    --accent-light: rgba(20, 83, 45, 0.4);
+    /* Dark green glass hover */
+    --glass-blur: blur(24px) saturate(180%);
+    --shadow-color: rgba(74, 222, 128, 0.2);
+    --foreground: var(--text);
+  }
+
+  .yellow {
+    /* YELLOW MODE - Warm Paper Theme */
+    --bg: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+    /* Warm cream gradient */
+    --surface: rgba(255, 255, 240, 0.25);
+    /* Light cream glass */
+    --border: rgba(255, 255, 255, 0.6);
+    /* Soft cream border */
+    --text: #451a03;
+    /* Dark brown text */
+    --muted: #78350f;
+    /* Muted brown text */
+    --accent: #f59e0b;
+    /* Warm amber */
+    --accent-light: rgba(254, 249, 195, 0.6);
+    /* Light yellow glass */
+    --glass-blur: blur(24px) saturate(180%);
+    --shadow-color: rgba(245, 158, 11, 0.15);
+    /* Soft amber glow */
+    --foreground: var(--text);
+  }
+
+  .light {
+    /* NORMAL/LIGHT MODE - Clean Theme */
+    --bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    /* Clean white gradient */
+    --surface: rgba(255, 255, 255, 0.25);
+    /* White glass */
+    --border: rgba(255, 255, 255, 0.6);
+    --text: #0f0f0f;
+    /* Near black */
+    --muted: #6b6b6b;
+    /* Gray text */
+    --accent: #22c55e;
+    /* Green accent */
+    --accent-light: rgba(234, 240, 228, 0.6);
+    --glass-blur: blur(24px) saturate(180%);
+    --shadow-color: rgba(74, 222, 128, 0.15);
+    --foreground: var(--text);
   }
 }
 
@@ -61,10 +110,195 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--bg);
+    background: var(--bg);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Liquid Glass Card Effect */
+  .glass-card {
+    background: var(--surface);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 1px rgba(255, 255, 255, 0.2),
+      0 0 0 1px rgba(255, 255, 255, 0.05);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .dark .glass-card {
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 1px 1px rgba(255, 255, 255, 0.08),
+      0 0 0 1px rgba(255, 255, 255, 0.03);
+  }
+
+  .glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 16px 48px var(--shadow-color),
+      inset 0 1px 1px rgba(255, 255, 255, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  /* Liquid glass button */
+  .glass-btn {
+    background: var(--accent-light);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 24px;
+    border-radius: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
+
+  .glass-btn:hover::before {
+    left: 100%;
+  }
+
+  .glass-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--shadow-color);
+    will-change: transform, box-shadow;
+  }
+
+  .glass-btn:active {
+    transform: translateY(0);
+  }
+
+  /* Performance: Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+
+    .ambient-orb {
+      animation: none !important;
+    }
+  }
+
+  /* Micro-interaction: Magnetic effect placeholder */
+  .magnetic {
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Smooth scrolling with enhanced behavior */
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 80px;
+  }
+
+  /* Premium custom scrollbar for WebKit browsers */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: all 0.2s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-light);
+    border: 2px solid var(--surface);
+    background-clip: border-box;
+  }
+
+  /* Standard scrollbar for Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+  }
+
+  /* Smooth scrollbar for WebKit browsers */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-light);
+  }
+
+  /* Ambient orbs for background */
+  .ambient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.4;
+    pointer-events: none;
+    animation: float 20s infinite ease-in-out;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -30px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(
+      135deg,
+      var(--accent) 0%,
+      #00b4d8 50%,
+      var(--accent) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   /* Make sure all headings use the sharp font */

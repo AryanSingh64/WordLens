@@ -29,9 +29,9 @@ export async function generateThumbnail(file, maxWidth = 150, quality = 0.5) {
     const page = await pdf.getPage(1);
 
     // Calculate scale to fit maxWidth while maintaining aspect ratio
-    const viewport = page.getViewport({ scale: 1 });
-    const scale = maxWidth / viewport.width;
-    const scaledViewport = viewport.scale(scale);
+    const initialViewport = page.getViewport({ scale: 1 });
+    const scale = maxWidth / initialViewport.width;
+    const scaledViewport = page.getViewport({ scale });
 
     // Set up canvas
     const canvas = document.createElement('canvas');

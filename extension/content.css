@@ -3,20 +3,22 @@
 
 #wordlens-popup-root,
 #wordlens-sidepanel-root {
-    /* === Color System (CSS Custom Properties) === */
+    /* === Color System (CSS Custom Properties) - Liquid Glass Theme === */
     /* Light theme (default) */
-    --wl-glass-bg-light: rgba(245, 235, 220, 0.15);
-    --wl-glass-border-light: rgba(245, 235, 220, 0.25);
+    --wl-glass-bg-light: rgba(255, 255, 255, 0.15);
+    --wl-glass-border-light: rgba(255, 255, 255, 0.5);
     --wl-text-light: #1a1a1a;
-    --wl-muted-light: #6b6b6b;
-    --wl-surface-light: rgba(255, 252, 247, 0.85);
+    --wl-muted-light: #666666;
+    --wl-surface-light: rgba(255, 255, 255, 0.35);
+    --wl-panel-light: rgba(255, 255, 255, 0.45); /* inner module bg */
 
     /* Dark theme */
-    --wl-glass-bg-dark: rgba(30, 30, 30, 0.25);
-    --wl-glass-border-dark: rgba(255, 255, 255, 0.1);
+    --wl-glass-bg-dark: rgba(20, 20, 20, 0.2);
+    --wl-glass-border-dark: rgba(255, 255, 255, 0.12);
     --wl-text-dark: #f0f0f0;
-    --wl-muted-dark: #a0a0a0;
-    --wl-surface-dark: rgba(20, 20, 20, 0.85);
+    --wl-muted-dark: #b0b0b0;
+    --wl-surface-dark: rgba(30, 30, 30, 0.35);
+    --wl-panel-dark: rgba(50, 50, 50, 0.25); /* inner module bg */
 
     /* POS border colors */
     --wl-pos-noun: #C4704F;
@@ -24,14 +26,18 @@
     --wl-pos-adjective: #C9A84C;
     --wl-pos-adverb: #9B8EA8;
 
-    /* Accents */
-    --wl-accent: #4ade80;
-    --wl-accent-light: #14532d;
+    /* Accents - Enhanced liquid green */
+    --wl-accent: #22c55e;
+    --wl-accent-light: rgba(234, 240, 228, 0.6);
+    --wl-accent-glow: rgba(34, 197, 94, 0.25);
 
     /* Fonts */
     --wl-font-serif: 'Instrument Serif', serif;
     --wl-font-mono: 'Geist Mono', monospace;
     --wl-font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Enhanced glass blur */
+    --wl-glass-blur: blur(20px) saturate(180%);
 
     /* === End Color System === */
 
@@ -43,10 +49,8 @@
 
     font-family: var(--wl-font-sans);
     color: var(--wl-text-light);
-    line-height: 1.6;
+    line-height: 1.5;
     text-align: left;
-
-    /* Will switch colors based on theme class */
 }
 
 #wordlens-sidepanel-root {
@@ -63,28 +67,54 @@
     color: var(--wl-text-dark);
 }
 
-/* Glass morphism container */
+/* Liquid Glass morphism container */
 #wordlens-popup-root .wl-card {
     display: flex;
     flex-direction: row;
     background: var(--wl-surface-light);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: var(--wl-glass-blur);
+    -webkit-backdrop-filter: var(--wl-glass-blur);
     border: 1px solid var(--wl-glass-border-light);
-    border-radius: 12px;
-    padding: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 28px;
+    padding: 6px;
     width: 100%;
-    max-width: 520px;
+    max-width: 400px;
     overflow: hidden;
     box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.12),
-        0 2px 8px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    gap: 12px;
+        0 24px 48px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 1px rgba(255, 255, 255, 0.5),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.1);
+    gap: 6px;
     cursor: grab;
     min-width: 280px;
-    min-height: 380px;
+    min-height: 320px;
     max-height: calc(100vh - 48px);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Shimmer effect on hover */
+#wordlens-popup-root .wl-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transition: left 0.6s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+#wordlens-popup-root .wl-card:hover::after {
+    left: 100%;
 }
 
 #wordlens-sidepanel-root .wl-card {
@@ -93,6 +123,7 @@
     border-radius: 0;
     box-shadow: none;
     border: none;
+    padding: 0;
 }
 
 /* Dark theme glass */
@@ -100,27 +131,28 @@
 #wordlens-sidepanel-root.wl-theme-dark .wl-card {
     background: var(--wl-surface-dark);
     border-color: var(--wl-glass-border-dark);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        0 2px 8px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        0 24px 48px rgba(0, 0, 0, 0.5),
+        inset 0 1px 1px rgba(255, 255, 255, 0.08),
+        inset 0 -1px 1px rgba(0, 0, 0, 0.5);
 }
 
-/* Card entrance animation: rise from 12px with opacity fade */
+/* Liquid glass card entrance with scale */
 @keyframes wl-card-entrance {
     from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(16px) scale(0.96);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
 #wordlens-popup-root .wl-card,
 #wordlens-sidepanel-root .wl-card {
-    animation: wl-card-entrance 200ms ease-out;
+    animation: wl-card-entrance 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 /* Underline pulse animation for pause-to-peek */
@@ -156,32 +188,31 @@
 
 /* Side panel layout */
 .wl-sidebar {
-    width: 100px;
-    background: rgba(0, 0, 0, 0.03);
-    border-right: 1px solid var(--wl-glass-border-light);
-    border-radius: 12px 0 0 12px;
+    width: 76px;
+    background: transparent;
+    border-right: none;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    padding: 16px 10px;
-    gap: 6px;
+    align-items: center;
+    padding: 10px 6px;
+    gap: 10px;
     flex-shrink: 0;
 }
 
 #wordlens-sidepanel-root .wl-sidebar,
 #wordlens-popup-root.wl-theme-dark .wl-sidebar {
-    background: rgba(0, 0, 0, 0.1);
-    border-color: var(--wl-glass-border-dark);
+    background: transparent;
+    border-color: transparent;
 }
 
 /* Main content area */
 .wl-content-area {
     flex: 1;
     min-height: 180px;
-    padding: 16px 20px;
+    padding: 10px 12px 12px 2px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     overflow-y: auto;
 }
 
@@ -194,7 +225,7 @@
 }
 .wl-content-area *::-webkit-scrollbar-thumb {
     background: rgba(128, 128, 128, 0.3);
-    border-radius: 3px;
+    border-radius: 12px;
 }
 .wl-content-area *::-webkit-scrollbar-thumb:hover {
     background: rgba(128, 128, 128, 0.5);
@@ -205,49 +236,99 @@
     scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
 }
 
-/* Tab & action buttons */
+/* Liquid glass tab & action buttons with micro-interactions */
 .wl-tab-btn,
 .wl-action-btn {
-    background: transparent;
-    border: none;
+    background: var(--wl-panel-light);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border: 1px solid var(--wl-glass-border-light);
+    box-shadow:
+        0 4px 12px rgba(0,0,0,0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     color: var(--wl-muted-light);
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 10px;
+    font-weight: 600;
     cursor: pointer;
     width: 100%;
-    height: 36px;
-    border-radius: 8px;
+    height: 56px;
+    border-radius: 16px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    padding: 0 10px;
-    transition: all 0.2s ease;
+    justify-content: center;
+    gap: 4px;
+    padding: 0;
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     font-family: var(--wl-font-sans);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle shimmer on hover */
+.wl-tab-btn::before,
+.wl-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.15),
+        transparent
+    );
+    transition: left 0.5s ease;
+}
+
+.wl-tab-btn:hover::before,
+.wl-action-btn:hover::before {
+    left: 100%;
 }
 
 #wordlens-sidepanel-root .wl-tab-btn,
 #wordlens-sidepanel-root .wl-action-btn,
 #wordlens-popup-root.wl-theme-dark .wl-tab-btn,
 #wordlens-popup-root.wl-theme-dark .wl-action-btn {
+    background: var(--wl-panel-dark);
+    border-color: var(--wl-glass-border-dark);
     color: var(--wl-muted-dark);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .wl-tab-btn:hover,
 .wl-action-btn:hover {
-    background: var(--wl-accent-light);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
     color: var(--wl-accent);
 }
 
+#wordlens-popup-root.wl-theme-dark .wl-tab-btn:hover,
+#wordlens-popup-root.wl-theme-dark .wl-action-btn:hover {
+    box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
 #wordlens-popup-root .wl-tab-btn.active {
-    background: rgba(74, 222, 128, 0.15);
-    color: var(--wl-accent-light);
+    background: var(--wl-accent);
+    color: #111827;
+    border-color: rgba(74, 222, 128, 0.5);
+    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
 }
 
 #wordlens-sidepanel-root .wl-tab-btn.active,
 #wordlens-popup-root.wl-theme-dark .wl-tab-btn.active {
-    background: linear-gradient(135deg, var(--wl-accent-light), rgba(74, 222, 128, 0.3));
-    color: var(--wl-accent);
+    background: var(--wl-accent);
+    border-color: rgba(74, 222, 128, 0.5);
+    color: #111827;
+    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
 }
 
 /* Spacer */
@@ -262,12 +343,23 @@
     gap: 10px;
     margin-bottom: 4px;
     flex-wrap: wrap;
+    background: var(--wl-panel-light);
+    border: 1px solid var(--wl-glass-border-light);
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+}
+
+#wordlens-popup-root.wl-theme-dark .wl-header {
+    background: var(--wl-panel-dark);
+    border-color: var(--wl-glass-border-dark);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
 
 .wl-word-title-row {
     display: flex;
     align-items: baseline;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
@@ -290,7 +382,7 @@
     font-family: var(--wl-font-mono);
     font-size: 11px;
     font-weight: 600;
-    padding: 3px 8px;
+    padding: 4px 10px;
     border-radius: 999px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -302,7 +394,6 @@
     font-family: var(--wl-font-mono);
     font-size: 12px;
     color: var(--wl-muted-light);
-    margin-left: 4px;
 }
 
 #wordlens-sidepanel-root .wl-phonetic,
@@ -312,30 +403,42 @@
 
 /* Part-of-speech border */
 .wl-pos-definition {
-    margin-top: 8px;
-    padding-left: 12px;
-    border-left: 3px solid var(--wl-pos-noun);
+    margin-bottom: 12px;
+    background: var(--wl-panel-light);
+    border-radius: 20px;
+    padding: 16px;
+    border: 1px solid var(--wl-glass-border-light);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    position: relative;
+    overflow: hidden;
 }
 
-.wl-pos-definition.pos-verb {
-    border-left-color: var(--wl-pos-verb);
+.wl-pos-definition::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0; width: 4px;
+    background: var(--wl-pos-noun);
+    border-radius: 4px 0 0 4px;
 }
 
-.wl-pos-definition.pos-adjective {
-    border-left-color: var(--wl-pos-adjective);
+#wordlens-popup-root.wl-theme-dark .wl-pos-definition {
+    background: var(--wl-panel-dark);
+    border-color: var(--wl-glass-border-dark);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
 
-.wl-pos-definition.pos-adverb {
-    border-left-color: var(--wl-pos-adverb);
-}
+.wl-pos-definition.pos-verb::before { background: var(--wl-pos-verb); }
+.wl-pos-definition.pos-adjective::before { background: var(--wl-pos-adjective); }
+.wl-pos-definition.pos-adverb::before { background: var(--wl-pos-adverb); }
 
 .wl-pos-label {
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
     color: var(--wl-muted-light);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    opacity: 0.8;
 }
 
 #wordlens-sidepanel-root .wl-pos-label,
@@ -344,19 +447,17 @@
 }
 
 .wl-pos-definition.wl-highlight-context {
-    border-left-color: var(--wl-accent);
-    background: rgba(74, 222, 128, 0.05);
-    border-radius: 0 4px 4px 0;
-    padding: 6px 12px;
+    border-color: var(--wl-accent);
+    box-shadow: 0 0 0 1px var(--wl-accent), 0 4px 20px rgba(74, 222, 128, 0.15);
 }
 
 #wordlens-popup-root.wl-theme-dark .wl-highlight-context {
-    background: rgba(74, 222, 128, 0.1);
+    box-shadow: 0 0 0 1px var(--wl-accent), 0 4px 20px rgba(74, 222, 128, 0.1);
 }
 
 /* Definition blocks */
 .wl-definition {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--wl-text-light);
     line-height: 1.5;
     margin: 0;
@@ -368,11 +469,13 @@
 }
 
 .wl-example {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--wl-muted-light);
     margin-top: 6px;
-    line-height: 1.5;
+    line-height: 1.4;
     font-style: italic;
+    padding-left: 10px;
+    border-left: 2px solid rgba(128,128,128,0.2);
 }
 
 #wordlens-sidepanel-root .wl-example,
@@ -382,38 +485,45 @@
 
 /* Etymology section */
 .wl-etymology {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--wl-muted-light);
     font-style: italic;
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px dashed var(--wl-glass-border-light);
+    margin-top: 10px;
+    background: var(--wl-panel-light);
+    border-radius: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--wl-glass-border-light);
 }
 
 #wordlens-sidepanel-root .wl-etymology,
 #wordlens-popup-root.wl-theme-dark .wl-etymology {
+    background: var(--wl-panel-dark);
     border-color: var(--wl-glass-border-dark);
 }
 
 /* Buttons (speak, copy, save) */
 .wl-icon-btn {
-    background: transparent;
-    border: none;
+    background: var(--wl-panel-light);
+    border: 1px solid var(--wl-glass-border-light);
     color: var(--wl-muted-light);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
-    padding: 6px;
-    border-radius: 6px;
-    width: 32px;
-    height: 32px;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    padding: 8px;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 #wordlens-sidepanel-root .wl-icon-btn,
 #wordlens-popup-root.wl-theme-dark .wl-icon-btn {
+    background: var(--wl-panel-dark);
+    border-color: var(--wl-glass-border-dark);
     color: var(--wl-muted-dark);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .wl-icon-btn:hover {
@@ -461,79 +571,90 @@
 .wl-lang-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-top: 12px;
+    gap: 8px;
+    margin-top: 10px;
 }
 
 .wl-lang-card {
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--wl-panel-light);
     border: 1px solid var(--wl-glass-border-light);
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: 12px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
 #wordlens-sidepanel-root .wl-lang-card,
 #wordlens-popup-root.wl-theme-dark .wl-lang-card {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--wl-panel-dark);
     border-color: var(--wl-glass-border-dark);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .wl-lang-name {
-    font-size: 10px;
-    font-weight: 500;
+    font-size: 9px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
     color: var(--wl-muted-light);
+    opacity: 0.8;
 }
 
 .wl-lang-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--wl-muted-light);
 }
 
 /* Language selector buttons (grid) */
 .wl-lang-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 6px;
     margin-top: 10px;
 }
 
 .wl-lang-btn {
-    background: rgba(0, 0, 0, 0.05);
+    background: var(--wl-panel-light);
     border: 1px solid var(--wl-glass-border-light);
-    border-radius: 8px;
-    padding: 6px 8px;
-    font-size: 11px;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 10px;
+    font-weight: 600;
     font-family: var(--wl-font-sans);
-    color: #333; /* Always dark for readability on pastel */
+    color: var(--wl-text-light);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     text-align: center;
     line-height: 1.3;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 #wordlens-sidepanel-root .wl-lang-btn,
 #wordlens-popup-root.wl-theme-dark .wl-lang-btn {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--wl-panel-dark);
     border-color: var(--wl-glass-border-dark);
-    color: #333; /* Keep dark on pastel even in dark theme */
+    color: var(--wl-text-dark);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .wl-lang-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: var(--wl-accent);
+    color: var(--wl-accent);
+}
+
+#wordlens-popup-root.wl-theme-dark .wl-lang-btn:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .wl-lang-btn.active {
     background: var(--wl-accent);
-    border-color: var(--wl-accent);
-    color: #000;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(74, 222, 128, 0.3);
+    border-color: rgba(74, 222, 128, 0.5);
+    color: #111827;
+    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
 }
 
 #wordlens-sidepanel-root .wl-lang-name,
@@ -542,7 +663,7 @@
 }
 
 .wl-lang-text {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--wl-text-light);
     line-height: 1.4;
 }
@@ -555,18 +676,20 @@
 .wl-translation-result {
     font-size: 15px;
     color: var(--wl-text-light);
-    line-height: 1.5;
-    padding: 12px;
-    background: rgba(0, 0, 0, 0.03);
-    border-radius: 8px;
+    line-height: 1.6;
+    padding: 16px;
+    background: var(--wl-panel-light);
+    border-radius: 20px;
     border: 1px solid var(--wl-glass-border-light);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.03);
 }
 
 #wordlens-sidepanel-root .wl-translation-result,
 #wordlens-popup-root.wl-theme-dark .wl-translation-result {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--wl-panel-dark);
     border-color: var(--wl-glass-border-dark);
     color: var(--wl-text-dark);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
 
 /* Settings icon (in panel) */
@@ -574,29 +697,34 @@
     position: absolute;
     top: 12px;
     right: 12px;
-    background: transparent;
-    border: none;
+    background: var(--wl-panel-light);
+    border: 1px solid var(--wl-glass-border-light);
     color: var(--wl-muted-light);
     cursor: pointer;
-    padding: 6px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 #wordlens-sidepanel-root .wl-settings-icon,
 #wordlens-popup-root.wl-theme-dark .wl-settings-icon {
+    background: var(--wl-panel-dark);
+    border-color: var(--wl-glass-border-dark);
     color: var(--wl-muted-dark);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .wl-settings-icon:hover {
+    transform: translateY(-2px);
     color: var(--wl-text-light);
-    background: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
 }
 
 #wordlens-sidepanel-root .wl-settings-icon:hover,
 #wordlens-popup-root.wl-theme-dark .wl-settings-icon:hover {
     color: var(--wl-text-dark);
-    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 
 /* Command palette */
@@ -785,27 +913,29 @@
 }
 
 .wl-vault-item {
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--wl-panel-light);
     border: 1px solid var(--wl-glass-border-light);
-    border-radius: 10px;
-    padding: 14px 16px;
-    transition: all 0.2s ease;
+    border-radius: 20px;
+    padding: 16px;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
 #wordlens-sidepanel-root .wl-vault-item,
 #wordlens-popup-root.wl-theme-dark .wl-vault-item {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--wl-panel-dark);
     border-color: var(--wl-glass-border-dark);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .wl-vault-item:hover {
-    background: rgba(74, 222, 128, 0.06);
-    border-color: var(--wl-accent-light);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    background: var(--wl-accent-light);
+    border-color: rgba(74, 222, 128, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(74, 222, 128, 0.15);
 }
 
 .wl-vault-header {
@@ -816,7 +946,7 @@
 }
 
 .wl-vault-word {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--wl-text-light);
     margin: 0;
@@ -845,12 +975,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
 .wl-vault-date {
     font-size: 11px;
     color: var(--wl-muted-light);
+    font-weight: 500;
 }
 
 #wordlens-sidepanel-root .wl-vault-date,
@@ -860,20 +991,20 @@
 
 .wl-vault-actions {
     display: flex;
-    gap: 6px;
+    gap: 8px;
 }
 
 .wl-vault-btn {
     font-size: 11px;
-    padding: 5px 10px;
-    border-radius: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
     background: transparent;
     border: 1px solid var(--wl-glass-border-light);
     color: var(--wl-muted-light);
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 500;
-    height: 28px;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    font-weight: 600;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -886,9 +1017,10 @@
 }
 
 .wl-vault-btn:hover {
-    border-color: var(--wl-accent);
+    background: var(--wl-panel-light);
     color: var(--wl-accent);
-    background: rgba(74, 222, 128, 0.08);
+    border-color: var(--wl-accent);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
 .wl-vault-empty {

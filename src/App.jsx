@@ -1,6 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { HeroSection } from './components/ui/dynamic-hero'
-import { BookOpen, Volume2, FileText, Moon, Sun, Star } from 'lucide-react'
+import { BookOpen, Volume2, FileText, Moon, Sun, Star, Download, Upload, Zap, Shield, Palette } from 'lucide-react'
+
+// Import local book images
+import annie from './assets/annie-spratt-gl7joOaABlI-unsplash.webp'
+import emil from './assets/emil-widlund-xrbbXIXAWY0-unsplash.webp'
+import enrico from './assets/enrico-bet-lc7xcWebECc-unsplash.webp'
+import inaki from './assets/inaki-del-olmo-NIJuEQw0RKg-unsplash.webp'
+import trnava from './assets/trnava-university-BEEyeib-am8-unsplash.webp'
+import viktor from './assets/viktor-stefanoski-_72QmetH1Pw-unsplash.webp'
 
 export const LogoSVG = ({ className = "w-7 h-7 md:w-8 md:h-8" }) => (
   <svg viewBox="0 0 100 100" className={`shrink-0 ${className}`}>
@@ -60,6 +68,26 @@ function TestimonialCard({ name, review, comment }) {
 
 function App() {
   const [isDark, setIsDark] = useState(false);
+  const [heroImage, setHeroImage] = useState(0); // Index of current image
+
+  // Premium book & library themed images from local assets
+  const bookImages = [
+    annie,
+    emil,
+    enrico,
+    inaki,
+    trnava,
+    viktor
+  ];
+
+  useEffect(() => {
+    // Change image every 30 seconds
+    const intervalId = setInterval(() => {
+      setHeroImage(prev => (prev + 1) % bookImages.length);
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     if (isDark) {
@@ -69,35 +97,122 @@ function App() {
     }
   }, [isDark]);
 
-  // Inject read-box keyframes once
+  // Inject enhanced animation keyframes
   useEffect(() => {
-    const id = 'wl-read-box-style';
+    const id = 'wl-enhancements';
     if (!document.getElementById(id)) {
       const s = document.createElement('style');
       s.id = id;
       s.textContent = `
-        @keyframes read-box {
-          0%   { clip-path: inset(0 100% 0 0); }
-          40%  { clip-path: inset(0 0 0 0); }
-          80%  { clip-path: inset(0 0 0 0); }
-          100% { clip-path: inset(0 100% 0 0); }
+        /* Liquid glass shimmer */
+        @keyframes liquid-shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
         }
-        .wl-read-box {
+
+        /* Orbs floating animation */
+        @keyframes orb-float {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+          25% { transform: translate(20px, -20px) scale(1.1); opacity: 0.5; }
+          50% { transform: translate(-10px, 15px) scale(0.95); opacity: 0.35; }
+          75% { transform: translate(15px, 10px) scale(1.05); opacity: 0.45; }
+        }
+
+        /* Card entrance animation */
+        @keyframes card-entrance {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        /* Pulse glow effect */
+        @keyframes pulse-glow {
+          0%, 100% { box-shadow: 0 0 20px var(--shadow-color); }
+          50% { box-shadow: 0 0 40px var(--shadow-color); }
+        }
+
+        /* Arrow particle trail */
+        @keyframes particle-fade {
+          0% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(0); }
+        }
+
+        .animate-entrance {
+          animation: card-entrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+          opacity: 0;
+        }
+
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .delay-400 { animation-delay: 400ms; }
+
+        /* Shimmer overlay */
+        .shimmer {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.1),
+            transparent
+          );
+          background-size: 200% 100%;
+          animation: liquid-shimmer 3s infinite linear;
+        }
+
+        /* Enhanced glass card borders */
+        .glass-card-enhanced {
           position: relative;
-          display: inline-block;
+          overflow: hidden;
         }
-        .wl-read-box::after {
+
+        .glass-card-enhanced::before {
           content: '';
           position: absolute;
-          inset: -2px -6px;
-          border: 2.5px solid #9B5DE5;
-          border-radius: 4px;
-          animation: read-box 3.5s ease-in-out infinite;
-          pointer-events: none;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent
+          );
+        }
+
+        /* Installation step connector */
+        .install-step-connector {
+          position: absolute;
+          top: 50%;
+          left: calc(100% + 16px);
+          right: calc(100% + 32px);
+          height: 2px;
+          background: linear-gradient(90deg, var(--accent), transparent);
+          z-index: 0;
+        }
+
+        .dark .install-step-connector {
+          background: linear-gradient(90deg, var(--accent), rgba(255, 255, 255, 0.2));
         }
       `;
       document.head.appendChild(s);
     }
+  }, []);
+
+  const handleDownload = useCallback(() => {
+    // Google Drive direct download link
+    const zipUrl = 'https://drive.google.com/uc?export=download&id=1xVAdN66XGQzJwxdva6iuTH7xMsPzm2Xf';
+    const link = document.createElement('a');
+    link.href = zipUrl;
+    link.download = 'wordlens-extension-v2.0.0.zip';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }, []);
 
   const testimonials = [
@@ -109,53 +224,207 @@ function App() {
     { name: "Solt Wagner", review: "You can now select any text and understand its tone context instantly. Built robustly and with a very clean UI." }
   ];
 
+  const features = [
+    {
+      icon: BookOpen,
+      title: "Double-Click Definitions",
+      description: "Hover over any word and double-click to instantly see definitions, pronunciation, and clear explanations.",
+      color: "from-green-400 to-emerald-500"
+    },
+    {
+      icon: Volume2,
+      title: "AI Sentence Summary",
+      description: "Select any sentence to get a plain-English summary and understand the exact tone and meaning.",
+      color: "from-blue-400 to-cyan-500"
+    },
+    {
+      icon: FileText,
+      title: "Built-in PDF Reader",
+      description: "Open PDFs directly in WordLens and use all the same powerful lookup features without switching tabs.",
+      color: "from-purple-400 to-pink-500"
+    },
+    {
+      icon: Zap,
+      title: "Lightning Fast",
+      description: "No context switching. All tools appear instantly where you need them, making reading smooth and uninterrupted.",
+      color: "from-yellow-400 to-orange-500"
+    },
+    {
+      icon: Shield,
+      title: "Privacy First",
+      description: "Your reading data stays private. We don't track your browsing or store your personal information.",
+      color: "from-indigo-400 to-purple-500"
+    },
+    {
+      icon: Palette,
+      title: "Liquid Glass UI",
+      description: "Beautiful glassmorphism design with smooth animations and micro-interactions that feel premium.",
+      color: "from-teal-400 to-green-500"
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-bg text-text scroll-smooth relative transition-colors duration-300 flex flex-col">
+    <div className="min-h-screen bg-bg text-text scroll-smooth relative transition-colors duration-300 flex flex-col overflow-hidden">
+
+      {/* Ambient background orbs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="ambient-orb w-96 h-96 bg-green-300 top-0 left-0" style={{ animationDelay: '0s' }}></div>
+        <div className="ambient-orb w-80 h-80 bg-blue-300 top-1/3 right-0" style={{ animationDelay: '10s' }}></div>
+      </div>
 
       {/* Hero Section */}
-      <HeroSection
-        heading={<><span className="wl-read-box">Read</span>{' with understanding.'}</>}
-        tagline="WordLens sits beside your reading. Look up a word, understand a sentence, open a PDF — all without leaving the page."
-        buttonText="Add to Chrome"
-        imageUrl="https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=60"
-        logo={<LogoBrand small={true} />}
-        headerRight={
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className="relative inline-flex items-center justify-center p-2 w-9 h-9 text-text rounded-full hover:bg-surface border border-transparent hover:border-border transition-colors focus:outline-none"
-            title="Toggle Dark Mode"
-          >
-            <Moon size={18} className={`absolute transition-all duration-300 transform ${isDark ? 'opacity-0 scale-50 -rotate-90' : 'opacity-100 scale-100 rotate-0'}`} />
-            <Sun size={18} className={`absolute transition-all duration-300 transform ${isDark ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} />
-          </button>
-        }
-        navItems={[
-          { id: 'how', label: 'Features', href: '#how-it-works' },
-          { id: 'pdf', label: 'PDF Reader', href: 'pdf-viewer.html' },
-        ]}
-      />
+      <div className="relative z-10">
+        <HeroSection
+          heading={<><span className="wl-read-box">Read</span>{' with understanding.'}</>}
+          tagline="WordLens sits beside your reading. Look up a word, understand a sentence, open a PDF — all without leaving the page."
+          buttonText="Get WordLens"
+          ctaAction={handleDownload}
+          imageUrl={bookImages[heroImage]}
+          logo={<LogoBrand small={true} />}
+          headerRight={
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className="relative inline-flex items-center justify-center p-2 w-10 h-10 text-text rounded-full glass-card hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-accent"
+              title="Toggle Dark Mode"
+            >
+              <Moon size={18} className={`absolute transition-all duration-300 transform ${isDark ? 'opacity-0 scale-50 -rotate-90' : 'opacity-100 scale-100 rotate-0'}`} />
+              <Sun size={18} className={`absolute transition-all duration-300 transform ${isDark ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'}`} />
+            </button>
+          }
+          navItems={[
+            { id: 'features', label: 'Features', href: '#features' },
+            { id: 'install', label: 'Install', href: '#install' },
+          ]}
+        />
+      </div>
 
-      {/* --- HOW IT WORKS SECTION --- */}
-      <section id="how-it-works" className="py-24 px-6 w-full flex flex-col items-center">
-        <div className="w-full max-w-5xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-medium text-text mb-4 tracking-tight">Quiet assistance, right where you read.</h2>
-            <p className="text-muted text-lg max-w-2xl mx-auto">
-              No massive sidebars. No jumping between tabs. Just the context you need.
+      {/* --- FEATURES SECTION --- */}
+      <section id="features" className="py-24 px-6 w-full flex flex-col items-center relative z-10">
+        <div className="w-full max-w-7xl">
+          <div className="text-center mb-20 animate-entrance">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium text-text mb-6 tracking-tight">
+              Quiet assistance, right where you read.
+            </h2>
+            <p className="text-xl text-muted max-w-3xl mx-auto leading-relaxed">
+              No massive sidebars. No jumping between tabs. Just the context you need, exactly when you need it.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FeatureCard icon={BookOpen} title="Double-click a word" description="Instantly see the definition, pronunciation, and a friendly, 1-2 sentence explanation." />
-            <FeatureCard icon={Volume2} title="Select a sentence" description="Get a plain-English summary and understand the exact tone of what you are reading." />
-            <FeatureCard icon={FileText} title="Open a PDF" description="Drop any PDF into the built-in reader and use all the same selection tools." />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, idx) => (
+              <div
+                key={idx}
+                className="glass-card glass-card-enhanced p-8 flex flex-col items-center text-center group hover:scale-[1.02] animate-entrance"
+                style={{ animationDelay: `${(idx + 1) * 100}ms` }}
+              >
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <feature.icon size={32} strokeWidth={1.5} className="text-white" />
+                </div>
+                <h3 className="text-2xl mb-4 text-text font-medium leading-tight">{feature.title}</h3>
+                <p className="text-muted text-lg leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* --- DOWNLOAD & INSTALLATION SECTION --- */}
+      <section id="install" className="py-24 px-6 w-full flex flex-col items-center relative z-10">
+        <div className="w-full max-w-4xl">
+          <div className="text-center mb-16 animate-entrance">
+            <h2 className="text-4xl md:text-5xl font-medium text-text mb-4 tracking-tight">
+              Install WordLens
+            </h2>
+            <p className="text-xl text-muted max-w-2xl mx-auto">
+              Get the extension in seconds. Since we're not in the Chrome Web Store yet, install manually in just a few clicks.
+            </p>
+          </div>
+
+          {/* Download Button */}
+          <div className="flex justify-center mb-16 animate-entrance delay-200">
+            <button
+              onClick={handleDownload}
+              className="glass-btn px-10 py-5 text-lg flex items-center gap-3 group shimmer"
+            >
+              <Download size={24} className="group-hover:animate-bounce" />
+              <span>Download Extension</span>
+            </button>
+          </div>
+
+          {/* Installation Steps */}
+          <div className="space-y-8">
+            <h3 className="text-2xl font-medium text-text text-center mb-12">Quick Installation Guide</h3>
+
+            <div className="relative">
+              {[1, 2, 3, 4, 5].map((step) => (
+                <div key={step} className="relative flex items-start gap-6 mb-8 animate-entrance delay-300">
+                  {step < 5 && <div className="install-step-connector"></div>}
+
+                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-accent-light border-2 border-accent flex items-center justify-center text-accent font-bold text-xl z-10">
+                    {step}
+                  </div>
+
+                  <div className="glass-card p-6 flex-1">
+                    <h4 className="text-lg font-semibold text-text mb-2">
+                      {step === 1 && "Open Chrome Extensions"}
+                      {step === 2 && "Enable Developer Mode"}
+                      {step === 3 && "Load the Extension"}
+                      {step === 4 && "Pin to Toolbar"}
+                      {step === 5 && "Start Reading!"}
+                    </h4>
+                    <p className="text-muted leading-relaxed">
+                      {step === 1 && "In your Chrome browser, navigate to chrome://extensions in the address bar."}
+                      {step === 2 && "Toggle the Developer mode switch in the top right corner to enable it."}
+                      {step === 3 && "Click Load unpacked and select the folder where you extracted the downloaded files."}
+                      {step === 4 && "Once loaded, click the puzzle icon in your toolbar and pin WordLens for easy access."}
+                      {step === 5 && "That's it! Select any word or text on any webpage to start using WordLens instantly."}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Additional Help */}
+            <div className="mt-12 glass-card p-8 animate-entrance delay-400">
+              <h4 className="text-xl font-semibold text-text mb-4 flex items-center gap-2">
+                <Download size={24} className="text-accent" />
+                What's Included
+              </h4>
+              <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-muted">
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-accent rounded-full"></span>
+                  Complete extension files
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-accent rounded-full"></span>
+                  Installation guide
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-accent rounded-full"></span>
+                  Icon assets (PNG, SVG)
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-accent rounded-full"></span>
+                  Background script
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-accent rounded-full"></span>
+                  Content scripts
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-accent rounded-full"></span>
+                  Popup and settings UI
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
 
       {/* --- TESTIMONIALS SECTION --- */}
-      <section className="py-24 px-6 w-full flex flex-col items-center bg-surface border-y border-border">
+      <section className="py-24 px-6 w-full flex flex-col items-center relative z-10 bg-surface/50 backdrop-blur-sm">
         <div className="w-full max-w-5xl">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 animate-entrance">
             <h2 className="text-3xl md:text-4xl tracking-tight font-medium text-text mb-3">What Our Customers Say</h2>
             <p className="text-muted text-lg">Hear from incredible readers building their vocabulary at lightning speed.</p>
           </div>
@@ -164,48 +433,45 @@ function App() {
               <TestimonialCard key={idx} name={t.name} review={t.review} comment={t.comment} />
             ))}
           </div>
-          <div className="mt-12 flex justify-center">
-            <button className="px-6 py-2 border-2 border-text text-text font-semibold rounded-full hover:bg-text hover:text-bg transition-colors text-sm">
-              Load More
-            </button>
-          </div>
         </div>
       </section>
 
       {/* --- FOOTER SECTION --- */}
-      <footer className="w-full bg-[#faefe5] pt-24 mt-auto overflow-hidden text-[#111]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 w-full flex flex-col">
+      <footer className="w-full pt-24 pb-12 mt-auto relative z-10 overflow-hidden">
+        <div className="absolute inset-0 glass-card-enhanced" style={{ backgroundColor: 'var(--surface)', opacity: 0.3 }}></div>
 
-          <div className="flex flex-col md:flex-row justify-between items-start mb-20 gap-16">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 w-full flex flex-col relative z-10">
+
+          <div className="flex flex-col md:flex-row justify-between items-start mb-16 gap-12">
             {/* Logo area */}
-            <LogoBrand darkText={true} />
+            <LogoBrand darkText={!isDark} />
 
-            {/* Links Grid — keep only real links */}
-            <div className="grid grid-cols-2 gap-x-16 gap-y-10 text-sm">
-              <div className="flex flex-col gap-4">
-                <span className="text-[#888] font-medium mb-1">Product</span>
-                <a href="#how-it-works" className="hover:opacity-60 transition-opacity">How it works</a>
-                <a href="#how-it-works" className="hover:opacity-60 transition-opacity">Features</a>
-                <a href="pdf-viewer.html" className="hover:opacity-60 transition-opacity">PDF Reader</a>
+            {/* Links Grid */}
+            <div className="grid grid-cols-2 gap-x-12 gap-y-6 text-sm">
+              <div className="flex flex-col gap-3">
+                <span className="text-muted font-medium mb-1">Product</span>
+                <a href="#features" className="hover:opacity-70 transition-opacity py-1">Features</a>
+                <a href="#install" className="hover:opacity-70 transition-opacity py-1">Installation</a>
+                <a href="pdf-viewer.html" className="hover:opacity-70 transition-opacity py-1">PDF Reader</a>
+                <button onClick={handleDownload} className="text-left hover:opacity-70 transition-opacity py-1 text-accent font-semibold">
+                  Download Extension
+                </button>
               </div>
-              <div className="flex flex-col gap-4">
-                <span className="text-[#888] font-medium mb-1">Connect</span>
-                <a href="https://twitter.com" target="_blank" rel="noopener" className="hover:opacity-60 transition-opacity">X (Twitter)</a>
-                <a href="https://github.com" target="_blank" rel="noopener" className="hover:opacity-60 transition-opacity">GitHub</a>
-                <a href="#" className="hover:opacity-60 transition-opacity">Support</a>
+              <div className="flex flex-col gap-3">
+                <span className="text-muted font-medium mb-1">Connect</span>
+                <a href="https://github.com" target="_blank" rel="noopener" className="hover:opacity-70 transition-opacity py-1">GitHub</a>
+                <a href="#" className="hover:opacity-70 transition-opacity py-1">Support</a>
+                <a href="#" className="hover:opacity-70 transition-opacity py-1">Privacy</a>
               </div>
             </div>
           </div>
 
-          {/* Copyright and Big Brand Text */}
-          <div className="flex flex-col items-start w-full relative pt-10 border-t border-[#11111122]">
-            <p className="text-xs text-[#666] mb-8 font-medium">© 2026 WordLens, Inc. All rights reserved.</p>
-            <h1
-              className="w-full text-[15vw] leading-[0.8] tracking-tighter font-bold text-center font-['Helvetica','Arial',sans-serif]"
-              style={{ letterSpacing: '-0.05em' }}
-            >
-              wordlens<sup className="text-[6vw] font-normal ml-[0.2vw] opacity-70 align-top relative top-[2vw]">®</sup>
-            </h1>
+          {/* Copyright */}
+          <div className="flex flex-col items-center w-full pt-8 border-t border-border/30">
+            <p className="text-xs text-muted mb-4 font-medium">© 2026 WordLens, Inc. All rights reserved.</p>
+            <div className="text-2xl font-bold tracking-tighter text-text/60 font-['Helvetica','Arial',sans-serif]">
+              wordlens<sup className="text-xs font-normal ml-1 opacity-60">®</sup>
+            </div>
           </div>
         </div>
       </footer>

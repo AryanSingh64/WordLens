@@ -1,11 +1,13 @@
 {
   "name": "wordlens",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node build-zip.cjs",
+    "build:extension": "vite build",
+    "package": "node build-zip.cjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -28,10 +30,14 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "adm-zip": "^0.5.16",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "imagemin": "^9.0.1",
+    "imagemin-webp": "^8.0.0",
+    "sharp": "^0.34.5",
     "vite": "^7.3.1"
   }
 }
