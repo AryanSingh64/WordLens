@@ -122,7 +122,10 @@
     // ============================================
 
     document.addEventListener('mouseup', (e) => {
-        setTimeout(() => {
+        const cx = e.clientX;
+        const cy = e.clientY;
+        // Use requestAnimationFrame to ensure we're after any scroll/visual updates
+        requestAnimationFrame(() => {
             // If we just dragged, ignore this event
             if (wasJustDragged) return;
 
@@ -136,7 +139,7 @@
                     const range = selection.getRangeAt(0);
                     const word = extractSelectedWord(text);
                     const context = extractSentenceContext(range);
-                    showPopup(word, context);
+                    showPopup(word, context, cx, cy);
                 } else if (text.length === 0) {
                     hidePopup();
                 }
@@ -147,7 +150,7 @@
                 removeUnderline(currentWordElement);
                 currentWordElement = null;
             }
-        }, 10);
+        });
     });
 
     // ============================================
@@ -159,7 +162,7 @@
 
         popupEl = document.createElement('div');
         popupEl.id = 'wordlens-popup-root';
-        document.body.appendChild(popupEl);
+        document.documentElement.appendChild(popupEl);
 
         setupDrag();
         setupTabListeners();
@@ -259,16 +262,34 @@
         });
     }
 
-    function showPopup(word, context) {
+    function showPopup(word, context, clientX = null, clientY = null) {
         initPopup();
 
         currentWord = word;
         currentContext = context;
         currentTab = 'dictionary';
 
-        // Position near selection (simplified: center-ish)
-        const x = Math.min(window.innerWidth - 650, Math.max(20, window.scrollX + window.innerWidth / 2 - 300));
-        const y = Math.max(20, window.scrollY + 100);
+        // Position near selection. Default to center if coordinates aren't provided.
+        // It's position: fixed, so we use viewport coordinates.
+        const defaultX = Math.max(20, window.innerWidth / 2 - 300);
+        const defaultY = Math.max(20, 100);
+        
+        let x = clientX !== null ? clientX + 15 : defaultX;
+        let y = clientY !== null ? clientY + 15 : defaultY;
+        
+        // Ensure it doesn't overflow the right edge or bottom edge
+        const popupWidth = 600; // rough width estimate from CSS
+        const popupHeight = 350; // rough min-height
+        if (x + popupWidth > window.innerWidth) {
+            x = Math.max(10, window.innerWidth - popupWidth - 20);
+        }
+        if (y + popupHeight > window.innerHeight) {
+            y = Math.max(10, window.innerHeight - popupHeight - 20);
+            // if clicking near bottom, show it above the cursor
+            if (clientY !== null && clientY > popupHeight + 20) {
+               y = clientY - popupHeight - 20;
+            }
+        }
 
         popupEl.style.left = `${x}px`;
         popupEl.style.top = `${y}px`;
@@ -645,11 +666,11 @@
             });
 
             main.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h3 style="font-size: 16px; font-weight: 600; margin: 0;">Vocabulary Vault</h3>
-                    <button class="wl-vault-btn wl-vault-clear-all" id="wl-vault-clear">Clear all</button>
+                <div class="wl-vault-header-row" style="margin-bottom: 12px;">
+                    <h3 class="wl-vault-title">Vocabulary Vault</h3>
                 </div>
                 <div class="wl-vault-list" id="wl-vault-list"></div>
+                <button class="wl-vault-clear-all" id="wl-vault-clear" style="margin-top: 12px;">Clear all</button>
             `;
 
             renderVaultList(words);
@@ -686,9 +707,11 @@
 
         list.innerHTML = words.map((entry, index) => `
             <div class="wl-vault-item" data-index="${index}">
-                <h4 class="wl-vault-word">${escapeHTML(entry.word)}</h4>
+                <div class="wl-vault-header-row">
+                    <h4 class="wl-vault-word">${escapeHTML(entry.word)}</h4>
+                    <span class="wl-vault-date">${formatVaultDate(entry)}</span>
+                </div>
                 <p class="wl-vault-context">${escapeHTML(entry.contextSentence || entry.meaning || '')}</p>
-                <p class="wl-vault-date">${formatVaultDate(entry)}</p>
                 <div class="wl-vault-actions">
                     <button class="wl-vault-btn wl-vault-lookup"
                         data-word="${encodeURIComponent(entry.word)}"
@@ -1043,6 +1066,38 @@
                 }
             }
 
+            // If still no range, try alternative method using elementFromPoint
+            if (!range) {
+                let element = document.elementFromPoint(x, y);
+                if (!element) return null;
+
+                // Find closest text node
+                const walker = document.createTreeWalker(
+                    element,
+                    NodeFilter.SHOW_TEXT,
+                    {
+                        acceptNode: function(node) {
+                            // Skip empty text nodes
+                            if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
+                            return NodeFilter.FILTER_ACCEPT;
+                        }
+                    }
+                );
+
+                let textNode = walker.nextNode();
+                if (!textNode) return null;
+
+                // Estimate offset based on position within element
+                const rect = element.getBoundingClientRect();
+                const relativeX = x - rect.left;
+                const charWidth = rect.width / element.textContent.length;
+                let offset = Math.max(0, Math.min(textNode.textContent.length, Math.floor(relativeX / (charWidth || 1))));
+
+                range = document.createRange();
+                range.setStart(textNode, offset);
+                range.setEnd(textNode, offset);
+            }
+
             if (!range) return null;
 
             const node = range.startContainer;
@@ -1054,10 +1109,9 @@
             const before = text.slice(0, offset);
             const after = text.slice(offset);
 
-            // Improved regex to support unicode letters (including accented, CJK, etc.)
-            // \p{L} matches any unicode letter, \p{N} matches numbers
-            const beforeMatch = before.match(/([\p{L}\p{N}]+(?:\-[\p{L}\p{N}]+)*)$/u);
-            const afterMatch = after.match(/^([\p{L}\p{N}]+(?:\-[\p{L}\p{N}]+)*)/u);
+            // Match words including @ mentions, #hashtags, underscores, hyphens. Exclude only whitespace and common punctuation
+            const beforeMatch = before.match(/([^\s!"$%&'()*+,./:;<=>?\[\\\]^`{|}~]+)$/);
+            const afterMatch = after.match(/^([^\s!"$%&'()*+,./:;<=>?\[\\\]^`{|}~]+)/);
 
             let word = null;
             let start = null;
@@ -1072,7 +1126,8 @@
                 return null;
             }
 
-            if (word.length < 2 || word.length > 50) return null;
+            // Increased max length for social media (handles long hashtags/URLs)
+            if (word.length < 2 || word.length > 100) return null;
 
             return {
                 element: node,
@@ -1115,11 +1170,11 @@
     }
 
     function extractSelectedWord(text) {
-        // Trim and extract the first word/phrase (support unicode)
+        // Trim and extract the first word/phrase, allowing @ mentions and #hashtags
         const trimmed = text.trim();
         if (!trimmed) return '';
-        // Match unicode words, hyphenated words, and common punctuation
-        const match = trimmed.match(/^([\p{L}\p{N}\-']+(?:\s+[\p{L}\p{N}\-']+)*)/u);
+        // Match @, #, underscores, hyphens as part of words
+        const match = trimmed.match(/^([^\s!"$%&'()*+,./:;<=>?\[\\\]^`{|}~]+)/);
         return match ? match[1] : trimmed.split(/\s+/)[0];
     }
 

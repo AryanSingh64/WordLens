@@ -122,14 +122,44 @@ export default function PdfViewer() {
           }
         }
 
-        // Generate thumbnail
-        const thumbnail = await generateThumbnail(file);
+        // Clean filename for better search results
+        const rawTitle = file.name.replace(/\.[^/.]+$/, '').trim();
+        const searchTitle = rawTitle.replace(/[-_\[\]()0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+        
+        let finalThumbnail = null;
+        let finalTitle = rawTitle;
+
+        if (searchTitle.length > 2) {
+          try {
+            // Attempt to fetch metadata and cover from Open Library API
+            const res = await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(searchTitle)}&limit=1`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.docs && data.docs.length > 0) {
+                const book = data.docs[0];
+                if (book.cover_i) {
+                  finalThumbnail = `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`;
+                }
+                if (book.title) {
+                  finalTitle = book.title;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Cover fetch failed', e);
+          }
+        }
+
+        // If no cover acquired via API, extract first page of PDF and use as thumbnail
+        if (!finalThumbnail) {
+          finalThumbnail = await generateThumbnail(file);
+        }
 
         // Create new entry
         const newEntry = createLibraryEntry(file);
-        newEntry.coverThumbnail = thumbnail;
+        newEntry.coverThumbnail = finalThumbnail;
         newEntry.totalPages = 0;
-        newEntry.metadata.title = file.name.replace(/\.[^/.]+$/, '');
+        newEntry.metadata.title = finalTitle;
         
         // Store blob
         const blob = file.slice(0, file.size);
@@ -190,6 +220,14 @@ export default function PdfViewer() {
 
   function handleDocumentLoadSuccess({ numPages }) {
     setNumPages(numPages);
+    
+    // Auto-scroll to bookmarked page
+    if (currentPage > 1) {
+      setTimeout(() => {
+        const el = document.getElementById(`pdf-page-${currentPage}`);
+        if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }, 500);
+    }
   }
 
   const handleWheel = (e) => {
@@ -288,10 +326,45 @@ export default function PdfViewer() {
   }
 
   return (
-    <div className={`min-h-screen p-4 md:p-6 lg:p-8 font-sans flex justify-center items-center transition-colors duration-200 ${isDarkMode ? 'bg-[#111] text-gray-200' : 'bg-[#f3f4f6] text-gray-800'}`}>
-      <div className={`w-full max-w-[1600px] h-[calc(100vh-4rem)] rounded-2xl shadow-sm border flex overflow-hidden transition-colors duration-200 ${isDarkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-gray-200'}`}>
-        
-        {/* LEFT COLUMN: PDF VIEWER */}
+    <>
+      <style>{`
+        .pdf-viewer-scroll::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+        .pdf-viewer-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .pdf-viewer-scroll::-webkit-scrollbar-thumb {
+          background-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.15)'};
+          border-radius: 20px;
+          border: 3px solid transparent;
+          background-clip: padding-box;
+        }
+        .pdf-viewer-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.3)'};
+        }
+        body::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+        body::-webkit-scrollbar-track {
+          background: ${isDarkMode ? '#111' : '#f3f4f6'};
+        }
+        body::-webkit-scrollbar-thumb {
+          background-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.15)'};
+          border-radius: 20px;
+          border: 3px solid transparent;
+          background-clip: padding-box;
+        }
+        body::-webkit-scrollbar-thumb:hover {
+          background-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.3)'};
+        }
+      `}</style>
+      <div className={`min-h-screen p-4 md:p-6 lg:p-8 font-sans flex justify-center items-center transition-colors duration-200 ${isDarkMode ? 'bg-[#111] text-gray-200' : 'bg-[#f3f4f6] text-gray-800'}`}>
+        <div className={`w-full max-w-[1600px] h-[calc(100vh-4rem)] rounded-2xl shadow-sm border flex overflow-hidden transition-colors duration-200 ${isDarkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-white border-gray-200'}`}>
+          
+          {/* LEFT COLUMN: PDF VIEWER */}
         <div className={`flex-1 relative flex flex-col ${isDarkMode ? 'bg-[#141414]' : 'bg-[#fdfdfd]'}`}>
           {/* Top Left Tools */}
           <div className={`absolute top-4 left-4 z-50 flex items-center rounded-lg shadow-sm border p-1 transition-colors ${isDarkMode ? 'bg-[#222] border-[#333]' : 'bg-white border-gray-200'}`}>
@@ -306,8 +379,37 @@ export default function PdfViewer() {
             </button>
           </div>
 
-          {/* Top Right Tool (Theme + Exit) */}
+          {/* Top Right Tool (Theme, Bookmark, Exit) */}
           <div className="absolute top-4 right-4 z-50 flex gap-2">
+            <button
+              title="Bookmark Current Page"
+              onClick={async () => {
+                if (!currentEntry) return;
+                const updated = {
+                  ...currentEntry,
+                  readingProgress: {
+                    lastOpened: Date.now(),
+                    lastPage: currentPage,
+                  }
+                };
+                await saveLibraryEntry(updated);
+                setLibrary(prev => ({ ...prev, [updated.id]: updated }));
+                setCurrentEntry(updated);
+                
+                // simple visual feedback
+                const btn = document.getElementById('wl-bookmark-btn');
+                if (btn) {
+                  const original = btn.innerHTML;
+                  btn.innerHTML = '<span class="text-green-500 font-bold">Saved!</span>';
+                  setTimeout(() => btn.innerHTML = original, 1500);
+                }
+              }}
+              id="wl-bookmark-btn"
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg shadow-sm border transition-colors ${isDarkMode ? 'bg-[#222] hover:bg-[#333] border-[#333] text-gray-300' : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              Bookmark
+            </button>
             <button 
               onClick={() => setIsDarkMode(!isDarkMode)} 
               className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg shadow-sm border transition-colors ${isDarkMode ? 'bg-[#222] hover:bg-[#333] border-[#333] text-gray-300' : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'}`}
@@ -326,7 +428,7 @@ export default function PdfViewer() {
 
           {/* Main PDF Content */}
           <div 
-            className={`flex-1 overflow-auto flex justify-center py-8 ${isDarkMode ? 'bg-[#141414]' : 'bg-[#fdfdfd]'}`} 
+            className={`flex-1 overflow-auto pdf-viewer-scroll flex justify-center py-8 ${isDarkMode ? 'bg-[#141414]' : 'bg-[#fdfdfd]'}`} 
             ref={pdfContainerRef}
             onWheel={handleWheel}
           >
@@ -387,25 +489,25 @@ export default function PdfViewer() {
           <div className={`flex px-4 pt-4 border-b gap-6 ${isDarkMode ? 'border-[#333]' : 'border-gray-100'}`}>
             <button 
               onClick={() => setActiveTab('activity')}
-              className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'activity' ? 'border-orange-500 text-orange-500' : (isDarkMode ? 'border-transparent text-gray-500 hover:text-gray-300' : 'border-transparent text-gray-400 hover:text-gray-800')}`}
+              className={`pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'activity' ? 'border-green-500 text-green-500' : (isDarkMode ? 'border-transparent text-gray-500 hover:text-gray-300' : 'border-transparent text-gray-400 hover:text-gray-800')}`}
             >
               Activity
             </button>
             <button 
               onClick={() => setActiveTab('info')}
-              className={`pb-3 border-b-2 text-sm font-semibold transition-colors ${activeTab === 'info' ? 'border-orange-500 text-orange-500' : (isDarkMode ? 'border-transparent text-gray-500 hover:text-gray-300' : 'border-transparent text-gray-400 hover:text-gray-800')}`}
+              className={`pb-3 border-b-2 text-sm font-semibold transition-colors ${activeTab === 'info' ? 'border-green-500 text-green-500' : (isDarkMode ? 'border-transparent text-gray-500 hover:text-gray-300' : 'border-transparent text-gray-400 hover:text-gray-800')}`}
             >
               Info
             </button>
           </div>
 
           {/* Content Area */}
-          <div className={`flex-1 overflow-y-auto p-5 flex flex-col gap-5 ${isDarkMode ? 'bg-[#1a1a1a]' : 'bg-white'}`}>
+          <div className={`flex-1 overflow-y-auto pdf-viewer-scroll p-5 flex flex-col gap-5 ${isDarkMode ? 'bg-[#1a1a1a]' : 'bg-white'}`}>
             
             {activeTab === 'info' ? (
               <div className="flex flex-col gap-4">
                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                     </div>
                     <div>
@@ -426,7 +528,7 @@ export default function PdfViewer() {
               </div>
             ) : isApiKeyMissing ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                <div className="w-16 h-16 bg-orange-50/10 rounded-full flex items-center justify-center text-orange-500 mb-4 border border-orange-500/20">
+                <div className="w-16 h-16 bg-green-50/10 rounded-full flex items-center justify-center text-green-500 mb-4 border border-green-500/20">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 </div>
                 <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>API Key Required</h3>
@@ -437,11 +539,11 @@ export default function PdfViewer() {
                     placeholder="gsk_..."
                     value={apiKeyInput}
                     onChange={e => setApiKeyInput(e.target.value)}
-                    className={`w-full border rounded-lg px-4 py-2.5 text-sm outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all font-mono ${isDarkMode ? 'bg-[#222] border-[#333] text-gray-200 placeholder-gray-600' : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'}`}
+                    className={`w-full border rounded-lg px-4 py-2.5 text-sm outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all font-mono ${isDarkMode ? 'bg-[#222] border-[#333] text-gray-200 placeholder-gray-600' : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'}`}
                   />
                   <button 
                     onClick={saveApiKey}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 rounded-lg text-sm transition-colors shadow-sm"
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 rounded-lg text-sm transition-colors shadow-sm"
                   >
                     Unlock Assistant
                   </button>
@@ -452,7 +554,7 @@ export default function PdfViewer() {
                 {chatMessages.map((msg, i) => (
                   <div key={i} className="flex gap-3 text-sm">
                     {msg.role === 'assistant' ? (
-                      <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 font-bold text-xs shrink-0 border border-orange-500/20">AI</div>
+                      <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 font-bold text-xs shrink-0 border border-green-500/20">AI</div>
                     ) : (
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 bg-cover ${isDarkMode ? 'bg-[#333] text-gray-400' : 'bg-gray-100 text-gray-600'}`} style={{backgroundImage: "url('https://ui-avatars.com/api/?name=User&background=f3f4f6&color=4b5563')"}}></div>
                     )}
@@ -470,7 +572,7 @@ export default function PdfViewer() {
                 
                 {isChatLoading && (
                   <div className="flex gap-3 text-sm animate-pulse">
-                     <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 font-bold text-xs shrink-0 border border-orange-500/20">AI</div>
+                     <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 font-bold text-xs shrink-0 border border-green-500/20">AI</div>
                      <div className="flex flex-col gap-2 w-full mt-1.5">
                         <div className={`h-3 rounded w-1/3 ${isDarkMode ? 'bg-[#333]' : 'bg-gray-200'}`}></div>
                         <div className={`h-3 rounded w-2/3 ${isDarkMode ? 'bg-[#333]' : 'bg-gray-200'}`}></div>
@@ -516,5 +618,6 @@ export default function PdfViewer() {
         </div>
       </div>
     </div>
+    </>
   );
 }

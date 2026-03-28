@@ -18,6 +18,7 @@
             background: linear-gradient(135deg, #eaefe8 0%, #f6f5ec 100%);
             color: #1a1a1a;
             position: relative;
+            overflow: hidden;
         }
 
         /* Ambient background orb effect to enhance glass look */
@@ -28,7 +29,7 @@
             left: -50px;
             width: 200px;
             height: 200px;
-            background: rgba(74, 222, 128, 0.2);
+            background: rgba(74, 222, 128, 0.35);
             filter: blur(60px);
             border-radius: 50%;
             z-index: -1;
@@ -42,7 +43,7 @@
             right: -50px;
             width: 200px;
             height: 200px;
-            background: rgba(0, 180, 216, 0.15);
+            background: rgba(0, 180, 216, 0.25);
             filter: blur(60px);
             border-radius: 50%;
             z-index: -1;
@@ -51,10 +52,10 @@
 
         .wl-popup-header {
             padding: 16px 20px;
-            background: rgba(255, 252, 247, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 252, 247, 0.35);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
             display: flex;
             justify-content: space-between;
@@ -139,8 +140,10 @@
 
         .wl-popup-content {
             padding: 16px 20px;
-            max-height: calc(100vh - 70px);
+            height: calc(100vh - 71px);
             overflow-y: auto;
+            position: relative;
+            z-index: 1;
         }
 
         /* Custom scrollbar for glass look */
@@ -159,10 +162,10 @@
         }
 
         .wl-vault-item {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             border-radius: 12px;
             padding: 14px 16px;
             margin-bottom: 12px;
@@ -173,8 +176,8 @@
         }
 
         .wl-vault-item:hover {
-            background: rgba(255, 255, 255, 0.75);
-            border-color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.8);
             box-shadow: 0 6px 16px rgba(0,0,0,0.05);
             transform: translateY(-2px);
         }

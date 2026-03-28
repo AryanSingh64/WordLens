@@ -72,12 +72,12 @@ export default function LibraryView({ onOpenPdf, onFileSelect }) {
                 placeholder="Search documents..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 bg-gray-50 border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all text-gray-700"
+                className="w-64 bg-gray-50 border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 transition-all text-gray-700"
               />
               <svg className="absolute left-3 top-2.5 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </div>
             
-            <label className="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center gap-2">
+            <label className="cursor-pointer bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               Open PDF
               <input
@@ -114,7 +114,7 @@ export default function LibraryView({ onOpenPdf, onFileSelect }) {
                 <div
                   key={entry.id}
                   onClick={() => onOpenPdf(entry)}
-                  className="group relative bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:border-orange-300 hover:shadow-xl hover:shadow-orange-500/10 hover:-translate-y-1"
+                  className="group relative bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:border-green-300 hover:shadow-xl hover:shadow-green-500/10 hover:-translate-y-1"
                 >
                   {/* Cover */}
                   <div className="aspect-[3/4] bg-gray-50 flex items-center justify-center relative overflow-hidden border-b border-gray-100">
@@ -132,7 +132,7 @@ export default function LibraryView({ onOpenPdf, onFileSelect }) {
                     {entry.totalPages > 0 && progress > 0 && (
                       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
                         <div
-                          className="h-full bg-orange-500 transition-all duration-300"
+                          className="h-full bg-green-500 transition-all duration-300"
                           style={{ width: `${Math.min(progress, 100)}%` }}
                         />
                       </div>
@@ -145,7 +145,7 @@ export default function LibraryView({ onOpenPdf, onFileSelect }) {
                       </div>
                     )}
                     {isReading && !isCompleted && (
-                      <div className="absolute top-2 left-2 bg-orange-500 text-white shadow-sm text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                      <div className="absolute top-2 left-2 bg-green-500 text-white shadow-sm text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                         Reading
                       </div>
                     )}

@@ -16,7 +16,8 @@
       "Bash(cp -f \"/f/Github-Code/WordLens/extension/popup.js\" \"/f/Github-Code/WordLens/dist/extension/popup.js\")",
       "Bash(cp:*)",
       "Bash(cp -f \"/f/Github-Code/WordLens/public/manifest.json\" \"/f/Github-Code/WordLens/dist/manifest.json\")",
-      "Bash(ls -la *.json *.js)"
+      "Bash(ls -la *.json *.js)",
+      "Bash(grep -o 'wordPattern = ' dist/assets/*.js)"
     ]
   }
 }
