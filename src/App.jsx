@@ -67,7 +67,10 @@ function TestimonialCard({ name, review, comment }) {
 }
 
 function App() {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    // Check localStorage for saved preference, default to true (dark mode)
+    return localStorage.getItem('wordlens-theme') !== 'light';
+  });
   const [heroImage, setHeroImage] = useState(0); // Index of current image
 
   // Premium book & library themed images from local assets
@@ -92,8 +95,10 @@ function App() {
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('wordlens-theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('wordlens-theme', 'light');
     }
   }, [isDark]);
 
