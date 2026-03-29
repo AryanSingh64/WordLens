@@ -483,19 +483,18 @@
             left: 0;
             top: 0;
             bottom: 0;
-            width: 3px;
-            background: linear-gradient(to bottom, var(--wl-accent, #22c55e), #00b4d8);
+            width: 2px;
+            background: var(--wl-accent, #22c55e);
             opacity: 0;
-            transition: opacity 0.3s ease;
-            border-radius: 4px 0 0 4px;
+            transition: opacity 0.2s ease;
         }
 
         body.wl-theme-dark .wl-vault-item::before {
-            background: linear-gradient(to bottom, #4ade80, #22c55e);
+            background: #4ade80;
         }
 
         .wl-vault-item:hover::before {
-            opacity: 1;
+            opacity: 0.6;
         }
 
         .wl-vault-word {
@@ -512,6 +511,9 @@
             font-size: 13px;
             color: #a0a0a0;
             line-height: 1.5;
+            max-height: 3em; /* Show ~3 lines */
+            overflow-y: auto;
+            word-break: break-word;
         }
 
         .wl-vault-date {

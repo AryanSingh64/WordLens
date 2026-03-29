@@ -195,20 +195,31 @@ const HeroSection = ({
             canvas.height = window.innerHeight;
         };
 
+        let lastMouseX = 0, lastMouseY = 0;
+        let needsRedraw = false;
+
         const handleMouseMove = (e) => {
-            mousePosRef.current = { x: e.clientX, y: e.clientY };
+            const { x, y } = e;
+            // Only trigger redraw if mouse moved more than 5px (reduces unnecessary draws)
+            if (Math.abs(x - lastMouseX) > 5 || Math.abs(y - lastMouseY) > 5) {
+                mousePosRef.current = { x, y };
+                lastMouseX = x;
+                lastMouseY = y;
+                needsRedraw = true;
+            }
         };
 
         window.addEventListener('resize', updateCanvasSize);
         window.addEventListener('mousemove', handleMouseMove);
         updateCanvasSize();
 
-        /* Animation loop — with throttling for performance */
+        /* Animation loop — with throttling and dirty checking */
         let lastTime = 0;
         const animateLoop = (timestamp) => {
-            if (timestamp - lastTime > 16) { // Cap at ~60fps
+            if (timestamp - lastTime > 16 && needsRedraw) { // Cap at ~60fps and only draw when needed
                 ctxRef.current?.clearRect(0, 0, canvas.width, canvas.height);
                 drawArrow();
+                needsRedraw = false;
                 lastTime = timestamp;
             }
             animationFrameIdRef.current = requestAnimationFrame(animateLoop);

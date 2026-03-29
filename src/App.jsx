@@ -115,41 +115,44 @@ function App() {
           100% { background-position: 200% 0; }
         }
 
-        /* Orbs floating animation */
+        /* Orbs floating animation - optimized with transform3d */
         @keyframes orb-float {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
-          25% { transform: translate(20px, -20px) scale(1.1); opacity: 0.5; }
-          50% { transform: translate(-10px, 15px) scale(0.95); opacity: 0.35; }
-          75% { transform: translate(15px, 10px) scale(1.05); opacity: 0.45; }
+          0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.4; }
+          25% { transform: translate3d(20px, -20px, 0) scale(1.1); opacity: 0.5; }
+          50% { transform: translate3d(-10px, 15px, 0) scale(0.95); opacity: 0.35; }
+          75% { transform: translate3d(15px, 10px, 0) scale(1.05); opacity: 0.45; }
         }
 
-        /* Card entrance animation */
+        /* Card entrance animation - GPU accelerated */
         @keyframes card-entrance {
           from {
             opacity: 0;
-            transform: translateY(20px) scale(0.95);
+            transform: translate3d(0, 20px, 0) scale(0.95);
           }
           to {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translate3d(0, 0, 0) scale(1);
           }
         }
 
-        /* Pulse glow effect */
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 20px var(--shadow-color); }
-          50% { box-shadow: 0 0 40px var(--shadow-color); }
+        /* Shimmer overlay - simplified */
+        .shimmer {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.08),
+            transparent
+          );
+          background-size: 200% 100%;
+          animation: liquid-shimmer 2s infinite linear;
+          will-change: background-position;
         }
 
-        /* Arrow particle trail */
-        @keyframes particle-fade {
-          0% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(0); }
-        }
-
+        /* Entrance animations with GPU acceleration */
         .animate-entrance {
-          animation: card-entrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+          animation: card-entrance 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
           opacity: 0;
+          will-change: opacity, transform;
         }
 
         .delay-100 { animation-delay: 100ms; }
@@ -157,40 +160,7 @@ function App() {
         .delay-300 { animation-delay: 300ms; }
         .delay-400 { animation-delay: 400ms; }
 
-        /* Shimmer overlay */
-        .shimmer {
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.1),
-            transparent
-          );
-          background-size: 200% 100%;
-          animation: liquid-shimmer 3s infinite linear;
-        }
-
-        /* Enhanced glass card borders */
-        .glass-card-enhanced {
-          position: relative;
-          overflow: hidden;
-        }
-
-        .glass-card-enhanced::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.3),
-            transparent
-          );
-        }
-
-        /* Installation step connector */
+        /* Installation step connector - optimized */
         .install-step-connector {
           position: absolute;
           top: 50%;
@@ -199,10 +169,21 @@ function App() {
           height: 2px;
           background: linear-gradient(90deg, var(--accent), transparent);
           z-index: 0;
+          will-change: transform;
         }
 
-        .dark .install-step-connector {
-          background: linear-gradient(90deg, var(--accent), rgba(255, 255, 255, 0.2));
+        /* Performance: reduce backdrop blur on scrollable areas */
+        .glass-card {
+          backdrop-filter: blur(12px) saturate(150%);
+          -webkit-backdrop-filter: blur(12px) saturate(150%);
+          transform: translateZ(0);
+          contain: layout style paint;
+        }
+
+        /* Ambient orbs - GPU accelerated */
+        .ambient-orb {
+          will-change: transform;
+          filter: blur(80px);
         }
       `;
       document.head.appendChild(s);
