@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { HeroSection } from './components/ui/dynamic-hero'
-import { BookOpen, Volume2, FileText, Moon, Sun, Star, Download, Upload, Zap, Shield, Palette } from 'lucide-react'
+import { BookOpen, Volume2, FileText, Moon, Sun, Star, Download, Upload, Zap, Shield, Palette, Key } from 'lucide-react'
 
 // Import local book images
 import annie from './assets/annie-spratt-gl7joOaABlI-unsplash.webp'
@@ -449,8 +449,27 @@ function App() {
                       {step === 1 && "In your Chrome browser, navigate to chrome://extensions in the address bar."}
                       {step === 2 && "Toggle the Developer mode switch in the top right corner to enable it."}
                       {step === 3 && "Click Load unpacked and select the folder where you extracted the downloaded files."}
-                      {step === 4 && "Find WordLens in the extensions list and enable <strong className='text-text font-semibold'>'Allow access to file URLs'</strong>. This lets you open local PDF files."}
-                      {step === 5 && "Open WordLens settings (click the extension icon → Settings) and paste your free Groq API key. Get one at <a href='https://console.groq.com/keys' target='_blank' rel='noopener noreferrer' className='text-accent hover:underline'>console.groq.com/keys</a>"}
+                      {step === 4 && (
+                        <>
+                          Find WordLens in the extensions list and enable{" "}
+                          <strong className="font-semibold text-text">"Allow access to file URLs"</strong>.
+                          This lets you open local PDF files.
+                        </>
+                      )}
+                      {step === 5 && (
+                        <>
+                          Open WordLens settings (click the extension icon → Settings) and paste your free Groq API key.
+                          {" "}Get one at{" "}
+                          <a
+                            href="https://console.groq.com/keys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-accent hover:underline"
+                          >
+                            console.groq.com/keys
+                          </a>
+                        </>
+                      )}
                       {step === 6 && "That's it! Select any word or text on any webpage, or open a PDF to start using WordLens instantly."}
                     </p>
                   </div>
