@@ -138,12 +138,61 @@
       0 0 0 1px rgba(255, 255, 255, 0.03);
   }
 
+  /* Subtle left border accent on hover - premium touch */
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--accent, #22c55e), #00b4d8);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 4px 0 0 4px;
+    pointer-events: none;
+  }
+
+  .glass-card:hover::before {
+    opacity: 1;
+  }
+
   .glass-card:hover {
     transform: translateY(-4px);
     box-shadow:
       0 16px 48px var(--shadow-color),
       inset 0 1px 1px rgba(255, 255, 255, 0.3),
       0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  /* Enhanced glass card with top highlight border */
+  .glass-card-enhanced {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-card-enhanced::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+  }
+
+  .dark .glass-card-enhanced::before {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.15),
+      transparent
+    );
   }
 
   /* Liquid glass button */

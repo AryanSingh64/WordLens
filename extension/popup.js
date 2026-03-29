@@ -17,8 +17,31 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.runtime.openOptionsPage();
     });
 
-    // Open PDF reader
-    linkPdf.addEventListener('click', () => {
+    // Open PDF reader - check API key first
+    linkPdf.addEventListener('click', async () => {
+        // Check if API key exists
+        const hasApiKey = await new Promise((resolve) => {
+            chrome.storage.local.get(['groqApiKey'], (result) => {
+                resolve(!!result.groqApiKey);
+            });
+        });
+
+        if (!hasApiKey) {
+            // Show error message in popup
+            contentEl.innerHTML = `
+                <div class="wl-error-banner">
+                    Please enter your API key to use PDF features. Redirecting to settings...
+                </div>
+            `;
+            // Redirect to options page after a short delay
+            setTimeout(() => {
+                chrome.runtime.openOptionsPage();
+                window.close();
+            }, 1500);
+            return;
+        }
+
+        // Open PDF reader
         chrome.tabs.create({ url: chrome.runtime.getURL('pdf-viewer.html') });
     });
 });

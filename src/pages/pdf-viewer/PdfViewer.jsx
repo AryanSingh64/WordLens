@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -7,7 +8,9 @@ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 import { getLibrary, saveLibraryEntry, deleteLibraryEntry } from '../../services/pdfStorage';
-import { getBlob } from '../../utils/blobStorage';
+import { getBlob, saveBlob, deleteBlob } from '../../utils/blobStorage';
+import { createLibraryEntry } from '../../types/pdfTypes';
+import { generateThumbnail } from '../../utils/pdfThumbnail';
 
 import LibraryView from './LibraryView';
 
@@ -29,6 +32,8 @@ export default function PdfViewer() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [pdfError, setPdfError] = useState(null);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState('activity');
   const [commentInput, setCommentInput] = useState('');
@@ -159,6 +164,7 @@ export default function PdfViewer() {
   }, [chatMessages]);
 
   const handleFileSelect = async (file) => {
+    setPdfError(null); // Clear any previous errors
     let lib = await getLibrary();
     let entry = Object.values(lib).find(
       e => e.fileName === file.name && e.fileSize === file.size
@@ -227,11 +233,15 @@ export default function PdfViewer() {
   };
 
   async function handleOpenPdf(entry, providedFile = null) {
+    setIsPdfLoading(true);
+    setPdfError(null);
+
     const openPdf = (f) => {
       setCurrentEntry(entry);
       setFile(f);
       setCurrentPage(entry.readingProgress?.lastPage || 1);
       setViewMode('pdf');
+      setIsPdfLoading(false);
 
       if (entry.chatHistory) {
         setChatMessages(entry.chatHistory);
@@ -240,16 +250,23 @@ export default function PdfViewer() {
       }
     };
 
-    if (providedFile) {
-      openPdf(providedFile);
-      return;
-    }
-
-    if (entry.fileBlobKey) {
-      const blob = await getBlob(entry.fileBlobKey);
-      if (blob) {
-        openPdf(new File([blob], entry.fileName, { type: 'application/pdf' }));
+    try {
+      if (providedFile) {
+        openPdf(providedFile);
+        return;
       }
+
+      if (entry.fileBlobKey) {
+        const blob = await getBlob(entry.fileBlobKey);
+        if (blob) {
+          openPdf(new File([blob], entry.fileName, { type: 'application/pdf' }));
+        } else {
+          throw new Error('PDF file not found in storage');
+        }
+      }
+    } catch (err) {
+      setIsPdfLoading(false);
+      setPdfError(err.message || 'Failed to load PDF');
     }
   }
 
@@ -403,7 +420,7 @@ export default function PdfViewer() {
   }
 
   return (
-    <div className="min-h-screen bg-bg text-text font-sans flex">
+    <div className="h-screen overflow-hidden bg-bg text-text font-sans flex">
       {/* PDF Viewer - Takes 100% width when sidebar closed */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Minimal Toolbar */}
@@ -491,17 +508,73 @@ export default function PdfViewer() {
         {/* PDF Content - Maximize space */}
         <div
           ref={pdfContainerRef}
-          className="flex-1 overflow-y-auto custom-scrollbar flex justify-center py-8 px-4"
+          className="flex-1 overflow-y-auto custom-scrollbar flex justify-center py-8 px-4 relative"
           onWheel={handleWheel}
         >
-          {file && (
+          {/* Full overlay loader when opening PDF */}
+          {isPdfLoading && !file && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg/80 backdrop-blur-sm z-10">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-3 border-accent/20"></div>
+                <div className="absolute top-0 left-0 w-16 h-16 rounded-full border-3 border-transparent border-t-accent animate-spin"></div>
+              </div>
+              <p className="text-sm text-text/70 mt-4 font-medium">Opening PDF...</p>
+            </div>
+          )}
+
+          {pdfError && (
+            <div className="flex flex-col items-center justify-center h-full w-full max-w-2xl mx-auto">
+              <div className="glass-card glass-card-enhanced p-8 text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 mx-auto">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-text mb-1">Unable to Access PDF</h3>
+                  <p className="text-sm text-muted leading-relaxed mb-3">
+                    {pdfError}
+                  </p>
+                  <div className="bg-surface/50 border border-border/50 rounded-xl p-3 text-left">
+                    <p className="text-xs font-semibold text-text mb-2">To fix this issue:</p>
+                    <ol className="text-xs text-muted space-y-1 list-decimal list-inside">
+                      <li>Go to <code className="bg-surface border border-border px-1 rounded text-accent">chrome://extensions</code></li>
+                      <li>Find WordLens extension</li>
+                      <li>Enable <strong className="text-text">"Allow access to file URLs"</strong></li>
+                      <li>Refresh this page</li>
+                    </ol>
+                  </div>
+                </div>
+                <button
+                  onClick={handleClosePdf}
+                  className="px-4 py-2 text-sm bg-accent hover:bg-accent/90 text-bg rounded-lg transition-colors"
+                >
+                  Back to Library
+                </button>
+              </div>
+            </div>
+          )}
+
+          {file && !pdfError && (
             <div style={{ filter: getPdfFilter() }} className="flex flex-col items-center gap-6">
               <Document
                 file={file}
                 onLoadSuccess={handleDocumentLoadSuccess}
+                onError={(error) => {
+                  console.error('PDF load error:', error);
+                  setPdfError(error.message || 'Failed to load PDF');
+                }}
                 loading={
-                  <div className="flex items-center justify-center h-64 text-muted text-sm">
-                    Loading...
+                  <div className="flex flex-col items-center justify-center h-96 w-full">
+                    <div className="relative">
+                      {/* Outer ring */}
+                      <div className="w-12 h-12 rounded-full border-2 border-accent/20"></div>
+                      {/* Spinning arc */}
+                      <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-2 border-transparent border-t-accent animate-spin"></div>
+                    </div>
+                    <p className="text-xs text-muted mt-3 font-medium">Loading PDF...</p>
                   </div>
                 }
                 className="flex flex-col items-center gap-6"
@@ -576,7 +649,7 @@ export default function PdfViewer() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col">
+        <div className="flex flex-col flex-1 p-3 min-h-0">
           {activeTab === 'info' ? (
             <div className="space-y-3 text-xs">
               <div>
@@ -595,78 +668,142 @@ export default function PdfViewer() {
               </div>
             </div>
           ) : activeTab === 'comments' ? (
-            <div className="flex flex-col gap-2 flex-1">
-              {(!currentEntry?.comments || currentEntry.comments.length === 0) ? (
-                <div className="text-center text-muted text-xs py-8">No comments</div>
-              ) : (
-                currentEntry.comments.map(c => (
-                  <div key={c.id} className="bg-surface border border-border rounded p-2 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <button
-                        onClick={() => {
-                          const el = document.getElementById(`pdf-page-${c.page}`);
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className="text-accent hover:underline text-[10px]"
-                      >
-                        Page {c.page}
-                      </button>
-                      <button onClick={() => handleRemoveComment(c.id)} className="text-muted hover:text-red-500 text-[10px]">
-                        ×
-                      </button>
-                    </div>
-                    <p className="text-text/80">{c.text}</p>
+            <div className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar mb-2">
+                {(!currentEntry?.comments || currentEntry.comments.length === 0) ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center text-muted text-xs py-8">No comments</div>
                   </div>
-                ))
-              )}
-              <div className="mt-auto pt-2 border-t border-border">
-                <textarea
-                  placeholder="Add comment..."
-                  className="w-full h-16 p-2 text-xs bg-surface border border-border rounded resize-none outline-none focus:border-accent text-text placeholder-muted"
-                  value={commentInput}
-                  onChange={e => setCommentInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAddComment();
-                    }
-                  }}
-                />
-                <button
-                  onClick={handleAddComment}
-                  className="w-full mt-1 h-6 text-xs bg-accent hover:bg-accent/90 text-bg font-medium rounded transition-colors"
-                >
-                  Add
-                </button>
+                ) : (
+                  currentEntry.comments.map(c => (
+                    <div key={c.id} className="bg-surface border border-border rounded p-2 text-xs">
+                      <div className="flex justify-between items-center mb-1">
+                        <button
+                          onClick={() => {
+                            const el = document.getElementById(`pdf-page-${c.page}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="text-accent hover:underline text-[10px]"
+                        >
+                          Page {c.page}
+                        </button>
+                        <button onClick={() => handleRemoveComment(c.id)} className="text-muted hover:text-red-500 text-[10px]">
+                          ×
+                        </button>
+                      </div>
+                      <p className="text-text/80">{c.text}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="pt-2 border-t border-border shrink-0">
+                <div className="flex gap-1">
+                  <textarea
+                    placeholder="Add comment..."
+                    className="flex-1 h-10 p-2 text-xs bg-surface border border-border rounded resize-none outline-none focus:border-accent text-text placeholder-muted"
+                    value={commentInput}
+                    onChange={e => setCommentInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAddComment();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleAddComment}
+                    className="h-10 px-3 bg-accent hover:bg-accent/90 text-bg rounded transition-colors flex items-center"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           ) : isApiKeyMissing ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-3 border border-accent/20">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
+              <div className="glass-card glass-card-enhanced p-8 max-w-sm w-full space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center text-accent border border-accent/20 mx-auto">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-text mb-1">Unlock AI-Powered Reading</h3>
+                  <p className="text-xs text-muted leading-relaxed">
+                    Get instant definitions, summaries, and answers to your questions about this document.
+                  </p>
+                </div>
+
+                <div className="bg-surface/50 border border-border/50 rounded-xl p-3 text-left">
+                  <p className="text-xs font-semibold text-text mb-2">How to get your free API key:</p>
+                  <ol className="text-xs text-muted space-y-1.5 list-decimal list-inside">
+                    <li>Go to <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">console.groq.com/keys</a></li>
+                    <li>Sign up or log in (free)</li>
+                    <li>Click "Create API Key"</li>
+                    <li>Copy and paste it below</li>
+                  </ol>
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    type="password"
+                    placeholder="gsk_..."
+                    value={apiKeyInput}
+                    onChange={e => setApiKeyInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveApiKey();
+                      }
+                    }}
+                    className="w-full h-10 px-3 text-sm rounded-xl bg-surface border border-border outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all font-mono text-text placeholder-muted"
+                  />
+                  <button
+                    onClick={saveApiKey}
+                    disabled={!apiKeyInput.trim()}
+                    className="w-full h-9 text-sm bg-accent hover:bg-accent/90 text-bg font-medium rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Connect API Key
+                  </button>
+                </div>
+
+                {saveStatus && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`text-xs font-medium px-3 py-2 rounded-lg ${
+                      saveStatus === 'Saved!'
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}
+                  >
+                    {saveStatus === 'Saved!' ? (
+                      <span className="flex items-center justify-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        API key saved successfully!
+                      </span>
+                    ) : saveStatus}
+                  </motion.div>
+                )}
               </div>
-              <h3 className="text-sm font-semibold mb-2 text-text">API Key Needed</h3>
-              <p className="text-xs text-muted mb-3">Enter Groq key for AI features</p>
-              <input
-                type="password"
-                placeholder="gsk_..."
-                value={apiKeyInput}
-                onChange={e => setApiKeyInput(e.target.value)}
-                className="w-full h-8 px-2 text-xs rounded bg-surface border border-border outline-none focus:border-accent font-mono text-text placeholder-muted"
-              />
-              <button
-                onClick={saveApiKey}
-                className="w-full mt-2 h-6 text-xs bg-accent hover:bg-accent/90 text-bg font-medium rounded transition-colors"
-              >
-                Save
-              </button>
+
+              <p className="text-xs text-muted mt-4 max-w-xs">
+                Your API key is stored locally and never sent to any server except Groq.
+              </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-2 flex-1">
-              <div className="flex-1 overflow-y-auto space-y-2">
+            <div className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1 mb-2">
                 {chatMessages.map((msg, i) => (
                   <div key={i} className={`flex gap-2 text-xs ${msg.role === 'assistant' ? 'text-text' : 'text-text/80'}`}>
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
@@ -694,7 +831,7 @@ export default function PdfViewer() {
                 <div ref={chatEndRef} />
               </div>
 
-              <div className="pt-2 border-t border-border">
+              <div className="pt-2 border-t border-border shrink-0">
                 <div className="flex gap-1">
                   <textarea
                     placeholder="Ask..."

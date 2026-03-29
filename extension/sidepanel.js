@@ -637,11 +637,18 @@ function escapeHTML(str) {
 }
 
 function renderError(msg) {
+    const isMissingApiKey = msg.includes('No API key') || msg.includes('API key');
+    let buttonHtml;
+    if (isMissingApiKey) {
+        buttonHtml = `<button class="wl-action-btn" style="margin: 16px auto 0; display: block; width: fit-content; padding: 8px 20px;" id="wl-btn-settings">Enter API Key</button>`;
+    } else {
+        buttonHtml = `<button class="wl-retry-btn wl-action-btn" style="margin: 16px auto 0; display: block; width: fit-content; padding: 8px 20px;" id="wl-btn-retry">Retry</button>`;
+    }
     return `
         <div class="wl-error">
             <strong>Error:</strong> ${escapeHTML(msg)}
+            ${buttonHtml}
         </div>
-        <button class="wl-retry-btn wl-action-btn" style="margin-top: 12px; width: auto;" id="wl-btn-retry">Retry</button>
     `;
 }
 
@@ -673,17 +680,23 @@ async function detectAndApplyTheme() {
     }
 }
 
-// Handle retry
-function attachRetryHandler() {
+// Handle retry and settings buttons
+function attachErrorButtonHandler() {
     const retryBtn = document.getElementById('wl-btn-retry');
     if (retryBtn) {
         retryBtn.addEventListener('click', loadTabContent);
     }
+    const settingsBtn = document.getElementById('wl-btn-settings');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            chrome.runtime.openOptionsPage();
+        });
+    }
 }
 
-// Override loadTabContent to attach retry handler after a delay
+// Override loadTabContent to attach handler after a delay
 const originalLoadTabContent = loadTabContent;
 loadTabContent = function() {
     originalLoadTabContent();
-    setTimeout(attachRetryHandler, 100);
+    setTimeout(attachErrorButtonHandler, 100);
 };

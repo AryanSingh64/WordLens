@@ -20,7 +20,10 @@
       "Bash(grep -o 'wordPattern = ' dist/assets/*.js)",
       "Bash(grep -E \"\\\\.html$\")",
       "Bash(unzip -l \"F:/Github-Code/WordLens/wordlens-extension-v2.0.0.zip\")",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(cd:*)",
+      "Bash(python:*)",
+      "Bash(unzip -l wordlens-extension-v2.0.0.zip)"
     ]
   }
 }

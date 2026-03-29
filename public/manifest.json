@@ -10,7 +10,8 @@
     "host_permissions": [
         "https://api.dictionaryapi.dev/*",
         "https://api.groq.com/*",
-        "https://translate.googleapis.com/*"
+        "https://translate.googleapis.com/*",
+        "file://*/*"
     ],
     "background": {
         "service_worker": "extension/background.js",

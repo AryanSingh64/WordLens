@@ -14,6 +14,7 @@ function packageExtension(sourceDir, outputZip) {
     'icons/',
     'extension/',
     'options.html',
+    'pdf-viewer.html',
     'assets/'
   ];
 

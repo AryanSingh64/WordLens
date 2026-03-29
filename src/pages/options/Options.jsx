@@ -26,6 +26,11 @@ function Options() {
         }
     }, []);
 
+    // Ensure dark theme is active
+    useEffect(() => {
+        document.documentElement.classList.add('dark');
+    }, []);
+
     const handleSaveKey = () => {
         if (typeof chrome !== 'undefined' && chrome.storage) {
             chrome.storage.local.set({ groqApiKey: apiKey }, () => {

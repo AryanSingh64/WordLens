@@ -775,13 +775,20 @@
 
         // Check if it's a 404/not found error
         const isNotFound = msg.toLowerCase().includes('404') || msg.toLowerCase().includes('not found');
+        const isApiKeyRelated = msg.toLowerCase().includes('api key') || msg.toLowerCase().includes('groq');
+        
         const title = isNotFound ? 'Word not found' : 'Error';
         const suggestion = isNotFound
             ? 'This word is not in our dictionary. Try a different word or check spelling.'
             : 'Something went wrong. Please try again.';
 
+        let extraTextHtml = '';
+        if (isApiKeyRelated) {
+            extraTextHtml = `<p style="margin: 12px 0 0; font-size: 12px; color: var(--wl-accent); background: rgba(34, 197, 94, 0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.2);">Please enter your Groq API key in the extension options.</p>`;
+        }
+
         main.innerHTML = `
-            <div style="text-align: center; padding: 30px 20px; color: var(--wl-muted-light);">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px 20px; color: var(--wl-muted-light);">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.6;">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -789,7 +796,8 @@
                 </svg>
                 <h4 style="margin: 0 0 8px; font-size: 16px; color: var(--wl-text-light);">${escapeHTML(title)}</h4>
                 <p style="margin: 0; font-size: 13px; line-height: 1.5;">${escapeHTML(suggestion)}</p>
-                <button class="wl-action-btn wl-retry-btn" style="margin-top: 16px; width: auto;">Try again</button>
+                ${extraTextHtml}
+                <button class="wl-action-btn wl-retry-btn" style="margin-top: 16px; display: inline-flex; align-items: center; justify-content: center; min-width: 100px;">Try again</button>
             </div>
         `;
     }

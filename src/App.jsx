@@ -333,6 +333,73 @@ function App() {
         </div>
       </section>
 
+      {/* --- API KEY SETUP SECTION --- */}
+      <section className="py-24 px-6 w-full flex flex-col items-center relative z-10">
+        <div className="w-full max-w-4xl">
+          <div className="text-center mb-12 animate-entrance">
+            <h2 className="text-4xl md:text-5xl font-medium text-text mb-4 tracking-tight">
+              Get Your Free API Key
+            </h2>
+            <p className="text-xl text-muted max-w-2xl mx-auto">
+              WordLens uses Groq AI for ultra-fast responses. Getting your API key is quick, free, and takes less than 2 minutes.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="glass-card glass-card-enhanced p-6 text-center animate-entrance delay-100">
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent border border-accent/20 mx-auto mb-4">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+                  <path d="M12 6v6l4 2"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-text mb-2">1. Create Account</h3>
+              <p className="text-sm text-muted">Sign up for free at <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">console.groq.com</a></p>
+            </div>
+
+            <div className="glass-card glass-card-enhanced p-6 text-center animate-entrance delay-200">
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent border border-accent/20 mx-auto mb-4">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-text mb-2">2. Create API Key</h3>
+              <p className="text-sm text-muted">Click "Create API Key" in your dashboard. No credit card required.</p>
+            </div>
+
+            <div className="glass-card glass-card-enhanced p-6 text-center animate-entrance delay-300">
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center text-accent border border-accent/20 mx-auto mb-4">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14"></path>
+                  <path d="M12 5l7 7-7 7"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-text mb-2">3. Paste & Enjoy</h3>
+              <p className="text-sm text-muted">Enter your key in WordLens settings. That's it!</p>
+            </div>
+          </div>
+
+          <div className="glass-card glass-card-enhanced p-6 max-w-2xl mx-auto animate-entrance delay-400">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent border border-accent/20 shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+              <div className="text-left">
+                <h4 className="font-semibold text-text mb-1">Your privacy matters</h4>
+                <p className="text-sm text-muted leading-relaxed">
+                  API keys are stored locally in your browser using Chrome's secure storage. They are never sent to any server except Groq's API endpoints. WordLens is open-source and contains no tracking or telemetry.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* --- DOWNLOAD & INSTALLATION SECTION --- */}
       <section id="install" className="py-24 px-6 w-full flex flex-col items-center relative z-10">
         <div className="w-full max-w-4xl">
@@ -361,9 +428,9 @@ function App() {
             <h3 className="text-2xl font-medium text-text text-center mb-12">Quick Installation Guide</h3>
 
             <div className="relative">
-              {[1, 2, 3, 4, 5].map((step) => (
+              {[1, 2, 3, 4, 5, 6].map((step) => (
                 <div key={step} className="relative flex items-start gap-6 mb-8 animate-entrance delay-300">
-                  {step < 5 && <div className="install-step-connector"></div>}
+                  {step < 6 && <div className="install-step-connector"></div>}
 
                   <div className="flex-shrink-0 w-12 h-12 rounded-full bg-accent-light border-2 border-accent flex items-center justify-center text-accent font-bold text-xl z-10">
                     {step}
@@ -374,15 +441,17 @@ function App() {
                       {step === 1 && "Open Chrome Extensions"}
                       {step === 2 && "Enable Developer Mode"}
                       {step === 3 && "Load the Extension"}
-                      {step === 4 && "Pin to Toolbar"}
-                      {step === 5 && "Start Reading!"}
+                      {step === 4 && "Enable File Access (for PDFs)"}
+                      {step === 5 && "Get Your API Key"}
+                      {step === 6 && "Start Reading!"}
                     </h4>
                     <p className="text-muted leading-relaxed">
                       {step === 1 && "In your Chrome browser, navigate to chrome://extensions in the address bar."}
                       {step === 2 && "Toggle the Developer mode switch in the top right corner to enable it."}
                       {step === 3 && "Click Load unpacked and select the folder where you extracted the downloaded files."}
-                      {step === 4 && "Once loaded, click the puzzle icon in your toolbar and pin WordLens for easy access."}
-                      {step === 5 && "That's it! Select any word or text on any webpage to start using WordLens instantly."}
+                      {step === 4 && "Find WordLens in the extensions list and enable <strong className='text-text font-semibold'>'Allow access to file URLs'</strong>. This lets you open local PDF files."}
+                      {step === 5 && "Open WordLens settings (click the extension icon → Settings) and paste your free Groq API key. Get one at <a href='https://console.groq.com/keys' target='_blank' rel='noopener noreferrer' className='text-accent hover:underline'>console.groq.com/keys</a>"}
+                      {step === 6 && "That's it! Select any word or text on any webpage, or open a PDF to start using WordLens instantly."}
                     </p>
                   </div>
                 </div>
@@ -437,6 +506,68 @@ function App() {
             {testimonials.map((t, idx) => (
               <TestimonialCard key={idx} name={t.name} review={t.review} comment={t.comment} />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* --- TROUBLESHOOTING SECTION --- */}
+      <section className="py-20 px-6 w-full flex flex-col items-center relative z-10">
+        <div className="w-full max-w-4xl">
+          <div className="text-center mb-12 animate-entrance">
+            <h2 className="text-3xl md:text-4xl tracking-tight font-medium text-text mb-3">Having Issues?</h2>
+            <p className="text-lg text-muted">Quick fixes for common problems</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="glass-card glass-card-enhanced p-6 space-y-3 animate-entrance delay-100">
+              <h3 className="text-lg font-semibold text-text flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                PDF Won't Open?
+              </h3>
+              <p className="text-sm text-muted leading-relaxed">
+                Make sure you've enabled <strong className="text-text">"Allow access to file URLs"</strong> for WordLens in <code className="bg-surface border border-border px-1 rounded text-accent text-xs">chrome://extensions</code>.
+              </p>
+            </div>
+
+            <div className="glass-card glass-card-enhanced p-6 space-y-3 animate-entrance delay-200">
+              <h3 className="text-lg font-semibold text-text flex items-center gap-2">
+                <Key size={18} className="text-accent" />
+                Missing API Key?
+              </h3>
+              <p className="text-sm text-muted leading-relaxed">
+                Click the WordLens icon → <strong className="text-text">Settings</strong> to enter your free Groq API key. Get one at <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">console.groq.com/keys</a>.
+              </p>
+            </div>
+
+            <div className="glass-card glass-card-enhanced p-6 space-y-3 animate-entrance delay-300">
+              <h3 className="text-lg font-semibold text-text flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Library Empty?
+              </h3>
+              <p className="text-sm text-muted leading-relaxed">
+                PDFs are saved automatically when you open them. Click <strong className="text-text">PDF</strong> in the popup to browse your library or add new files.
+              </p>
+            </div>
+
+            <div className="glass-card glass-card-enhanced p-6 space-y-3 animate-entrance delay-400">
+              <h3 className="text-lg font-semibold text-text flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="4 17 10 11 4 5"></polyline>
+                  <line x1="12" y1="19" x2="20" y2="19"></line>
+                </svg>
+                Need More Help?
+              </h3>
+              <p className="text-sm text-muted leading-relaxed">
+                Check the <a href="#" className="text-accent hover:underline">documentation</a> or <a href="#" className="text-accent hover:underline">contact support</a> for assistance with installation and configuration.
+              </p>
+            </div>
           </div>
         </div>
       </section>
