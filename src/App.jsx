@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { HeroSection } from './components/ui/dynamic-hero'
 import { BookOpen, Volume2, FileText, Moon, Sun, Star, Download, Upload, Zap, Shield, Palette, Key } from 'lucide-react'
+import { Analytics } from '@vercel/analytics/react'
 
 // Import local book images
 import annie from './assets/annie-spratt-gl7joOaABlI-unsplash.webp'
@@ -612,6 +613,7 @@ function App() {
         </div>
       </footer>
 
+      <Analytics />
     </div>
   )
 }
