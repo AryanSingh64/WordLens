@@ -192,7 +192,7 @@ function App() {
 
   const handleDownload = useCallback(() => {
     // Google Drive direct download link
-    const zipUrl = 'https://drive.google.com/uc?export=download&id=1xVAdN66XGQzJwxdva6iuTH7xMsPzm2Xf';
+    const zipUrl = 'https://drive.google.com/file/d/1xVAdN66XGQzJwxdva6iuTH7xMsPzm2Xf/view?usp=sharing';
     const link = document.createElement('a');
     link.href = zipUrl;
     link.download = 'wordlens-extension-v2.0.0.zip';
