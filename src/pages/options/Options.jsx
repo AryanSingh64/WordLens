@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookMarked, Trash2, Key, Check, Settings, Shield, Palette, Zap } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 function Options() {
     const [savedWords, setSavedWords] = useState([]);
@@ -335,6 +336,7 @@ function Options() {
                     </p>
                 </motion.div>
             </div>
+            <Analytics />
         </motion.div>
     );
 }
